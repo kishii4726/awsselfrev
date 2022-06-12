@@ -29,9 +29,37 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatalf("unable to load SDK config, %v", err)
 		}
+		fmt.Println("RDS: Check Start...")
 		client := rds.NewFromConfig(cfg)
 		resp, err := client.DescribeDBClusters(context.TODO(), &rds.DescribeDBClustersInput{})
-		fmt.Println(resp.DBClusters)
+		// Storageの暗号化確認
+		for _, v := range resp.DBClusters {
+			if *&v.StorageEncrypted == false {
+				fmt.Println("[Alert]: " + *v.DBClusterIdentifier + "のStorageが暗号化されていません")
+			}
+			// 削除保護有効確認
+			if *v.DeletionProtection == false {
+				fmt.Println("[Warning]: " + *v.DBClusterIdentifier + "の削除保護が有効化されていません")
+			}
+			// ログ出力確認 todo: ログ種類ごとに確認する
+			if len(v.EnabledCloudwatchLogsExports) == 0 {
+				fmt.Println("[Warning]: " + *v.DBClusterIdentifier + "でログ出力が設定されていません")
+			}
+			for _, db_cluster_member := range v.DBClusterMembers {
+				resp, err := client.DescribeDBInstances(context.TODO(), &rds.DescribeDBInstancesInput{
+					DBInstanceIdentifier: db_cluster_member.DBInstanceIdentifier,
+				})
+				if err != nil {
+					log.Fatalf("%v", err)
+				}
+				// 自動アップグレード
+				for _, db_instance := range resp.DBInstances {
+					if db_instance.AutoMinorVersionUpgrade == true {
+						fmt.Println("[Warning]: " + *db_instance.DBInstanceIdentifier + "のマイナーバージョン自動アップグレードが有効化されています")
+					}
+				}
+			}
+		}
 	},
 }
 
