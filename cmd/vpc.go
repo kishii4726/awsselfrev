@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -25,11 +27,13 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatalf("unable to load SDK config, %v", err)
 		}
-		fmt.Println("VPC: Check Start...")
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"LEVEL", "MESSAGE"})
+		fmt.Println("VPC: Check Results")
 
 		client := ec2.NewFromConfig(cfg)
 		resp, err := client.DescribeVpcs(context.TODO(), &ec2.DescribeVpcsInput{})
-
+		var data [][]string
 		for _, v := range resp.Vpcs {
 			// Nameタグの存在確認
 			vpc_id := *v.VpcId
@@ -40,7 +44,11 @@ to quickly create a Cobra application.`,
 				}
 			}
 			if is_name_tag_exists == false {
-				fmt.Println("[Notice]: " + vpc_id + "にNameタグが設定されていません")
+				data := append(data, []string{"Notice", vpc_id + "にNameタグが設定されていません"})
+				for _, v := range data {
+					table.Append(v)
+				}
+				// fmt.Println("[Notice]:  " + vpc_id + "にNameタグが設定されていません")
 			}
 
 			// DNSホスト名の有効確認
@@ -52,7 +60,11 @@ to quickly create a Cobra application.`,
 				log.Fatalf("%v", err)
 			}
 			if *enable_dns_hostnames.EnableDnsHostnames.Value == false {
-				fmt.Println("[Warning]: " + vpc_id + "のDNSホスト名が無効になっています")
+				data := append(data, []string{"Warning", vpc_id + "のDNSホスト名が無効になっています"})
+				for _, v := range data {
+					table.Append(v)
+				}
+				// fmt.Println("[Warning]: " + vpc_id + "のDNSホスト名が無効になっています")
 			}
 
 			// DNS解決の有効確認
@@ -64,9 +76,15 @@ to quickly create a Cobra application.`,
 				log.Fatalf("%v", err)
 			}
 			if *enable_dns_support.EnableDnsSupport.Value == false {
-				fmt.Println("[Warning]: " + vpc_id + "のDNS解決が無効になっています")
+				data := append(data, []string{"Warning", vpc_id + "のDNS解決が無効になっています"})
+				for _, v := range data {
+					table.Append(v)
+				}
+				// fmt.Println("[Warning]: " + vpc_id + "のDNS解決が無効になっています")
 			}
 		}
+		table.Render()
+		// fmt.Println("VPC: Check Completed")
 	},
 }
 
