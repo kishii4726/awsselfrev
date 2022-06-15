@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
@@ -28,8 +27,7 @@ to quickly create a Cobra application.`,
 			log.Fatalf("unable to load SDK config, %v", err)
 		}
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"LEVEL", "MESSAGE"})
-		fmt.Println("VPC: Check Results")
+		table.SetHeader([]string{"Service", "LEVEL", "MESSAGE"})
 
 		client := ec2.NewFromConfig(cfg)
 		resp, err := client.DescribeVpcs(context.TODO(), &ec2.DescribeVpcsInput{})
@@ -44,11 +42,10 @@ to quickly create a Cobra application.`,
 				}
 			}
 			if is_name_tag_exists == false {
-				data := append(data, []string{"Notice", vpc_id + "にNameタグが設定されていません"})
+				data := append(data, []string{"VPC", "Notice", vpc_id + "にNameタグが設定されていません"})
 				for _, v := range data {
 					table.Append(v)
 				}
-				// fmt.Println("[Notice]:  " + vpc_id + "にNameタグが設定されていません")
 			}
 
 			// DNSホスト名の有効確認
@@ -60,11 +57,10 @@ to quickly create a Cobra application.`,
 				log.Fatalf("%v", err)
 			}
 			if *enable_dns_hostnames.EnableDnsHostnames.Value == false {
-				data := append(data, []string{"Warning", vpc_id + "のDNSホスト名が無効になっています"})
+				data := append(data, []string{"VPC", "Warning", vpc_id + "のDNSホスト名が無効になっています"})
 				for _, v := range data {
 					table.Append(v)
 				}
-				// fmt.Println("[Warning]: " + vpc_id + "のDNSホスト名が無効になっています")
 			}
 
 			// DNS解決の有効確認
@@ -76,15 +72,13 @@ to quickly create a Cobra application.`,
 				log.Fatalf("%v", err)
 			}
 			if *enable_dns_support.EnableDnsSupport.Value == false {
-				data := append(data, []string{"Warning", vpc_id + "のDNS解決が無効になっています"})
+				data := append(data, []string{"VPC", "Warning", vpc_id + "のDNS解決が無効になっています"})
 				for _, v := range data {
 					table.Append(v)
 				}
-				// fmt.Println("[Warning]: " + vpc_id + "のDNS解決が無効になっています")
 			}
 		}
 		table.Render()
-		// fmt.Println("VPC: Check Completed")
 	},
 }
 
