@@ -3,12 +3,12 @@ package cmd
 import (
 	"context"
 	"log"
-	"os"
 
+	"aws-tacit-knowledge/pkg/color"
 	"aws-tacit-knowledge/pkg/config"
+	"aws-tacit-knowledge/pkg/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -24,10 +24,11 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Service", "LEVEL", "MESSAGE"})
-
+		table := table.SetTable()
 		client := ec2.NewFromConfig(cfg)
+		// level_info, level_warning, level_alert := color.SetLevelColor()
+		level_info, level_warning, _ := color.SetLevelColor()
+
 		resp, err := client.DescribeVpcs(context.TODO(), &ec2.DescribeVpcsInput{})
 		if err != nil {
 			log.Fatalf("%v", err)
@@ -43,7 +44,7 @@ to quickly create a Cobra application.`,
 				}
 			}
 			if is_name_tag_exists == false {
-				data := append(data, []string{"VPC", "Notice", vpc_id + "にNameタグが設定されていません"})
+				data := append(data, []string{"VPC", level_info, vpc_id + "にNameタグが設定されていません"})
 				for _, v := range data {
 					table.Append(v)
 				}
@@ -58,7 +59,7 @@ to quickly create a Cobra application.`,
 				log.Fatalf("%v", err)
 			}
 			if *enable_dns_hostnames.EnableDnsHostnames.Value == false {
-				data := append(data, []string{"VPC", "Warning", vpc_id + "のDNSホスト名が無効になっています"})
+				data := append(data, []string{"VPC", level_warning, vpc_id + "のDNSホスト名が無効になっています"})
 				for _, v := range data {
 					table.Append(v)
 				}
@@ -73,12 +74,15 @@ to quickly create a Cobra application.`,
 				log.Fatalf("%v", err)
 			}
 			if *enable_dns_support.EnableDnsSupport.Value == false {
-				data := append(data, []string{"VPC", "Warning", vpc_id + "のDNS解決が無効になっています"})
+				data := append(data, []string{"VPC", level_warning, vpc_id + "のDNS解決が無効になっています"})
 				for _, v := range data {
 					table.Append(v)
 				}
 			}
 		}
+
+		// ルートテーブル->NAT Gatewayの指定がAZ単位で揃っているか
+
 		table.Render()
 	},
 }
