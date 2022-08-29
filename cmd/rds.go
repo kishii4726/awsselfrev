@@ -9,7 +9,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	"aws-tacit-knowledge/pkg/config"
+
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -26,14 +27,14 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := config.LoadDefaultConfig(context.TODO())
-		if err != nil {
-			log.Fatalf("unable to load SDK config, %v", err)
-		}
+		cfg := config.LoadConfig()
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader([]string{"Service", "LEVEL", "MESSAGE"})
 		client := rds.NewFromConfig(cfg)
 		resp, err := client.DescribeDBClusters(context.TODO(), &rds.DescribeDBClustersInput{})
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
 		var data [][]string
 
 		for _, v := range resp.DBClusters {
