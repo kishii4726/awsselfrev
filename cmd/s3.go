@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strings"
 
 	"aws-tacit-knowledge/pkg/color"
 	"aws-tacit-knowledge/pkg/config"
@@ -77,6 +78,22 @@ to quickly create a Cobra application.`,
 			}
 
 			// バケット名に`log`が含まれるバケットにライフサイクルルールが設定されているか確認
+			if strings.Contains(v, "log") {
+				_, err := client.GetBucketLifecycleConfiguration(context.TODO(), &s3.GetBucketLifecycleConfigurationInput{
+					Bucket: aws.String(v),
+				})
+				if err != nil {
+					var re *awshttp.ResponseError
+					if errors.As(err, &re) {
+						if re.HTTPStatusCode() == 404 {
+							table.Append([]string{"S3", level_warning, v + "にライフサイクルルールが設定されていません"})
+						} else if re.HTTPStatusCode() == 301 {
+						} else {
+							log.Fatalf("%v", err)
+						}
+					}
+				}
+			}
 		}
 
 		table.Render()
