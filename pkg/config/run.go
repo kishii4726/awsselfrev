@@ -1,4 +1,4 @@
-package authentication
+package config
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
-func loadConfig() aws.Config {
+func LoadConfig() aws.Config {
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
