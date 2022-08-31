@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"aws-tacit-knowledge/pkg/color"
@@ -13,6 +14,7 @@ import (
 	"aws-tacit-knowledge/pkg/table"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +33,8 @@ to quickly create a Cobra application.`,
 		cfg := config.LoadConfig()
 		table := table.SetTable()
 		client := ecr.NewFromConfig(cfg)
-		_, level_warning, _ := color.SetLevelColor()
+		// level_info, level_warning, level_alert := color.SetLevelColor()
+		level_info, level_warning, _ := color.SetLevelColor()
 
 		resp, err := client.DescribeRepositories(context.TODO(), &ecr.DescribeRepositoriesInput{
 			MaxResults: aws.Int32(100),
@@ -42,13 +45,26 @@ to quickly create a Cobra application.`,
 		for _, v := range *&resp.Repositories {
 			// tagのimmutabilityの確認
 			if *&v.ImageTagMutability == "MUTABLE" {
-				table.Append([]string{"ECR", level_warning, "タグの上書きが可能です(MUTABLE)"})
+				table.Append([]string{"ECR", level_warning, *v.RepositoryName + "でタグの上書きが可能です(MUTABLE)"})
 			}
 			// imageのscanの確認
 			if *&v.ImageScanningConfiguration.ScanOnPush == false {
-				table.Append([]string{"ECR", level_warning, "イメージのスキャンが有効になっていません"})
+				table.Append([]string{"ECR", level_warning, *v.RepositoryName + "のイメージのスキャンが有効になっていません"})
 			}
-
+			//ライフサイクルポリシーの確認
+			_, err := client.GetLifecyclePolicy(context.TODO(), &ecr.GetLifecyclePolicyInput{
+				RepositoryName: v.RepositoryName,
+			})
+			if err != nil {
+				var re *awshttp.ResponseError
+				if errors.As(err, &re) {
+					if re.HTTPStatusCode() == 400 {
+						table.Append([]string{"ECR", level_info, *v.RepositoryName + "にライフサイクルポリシーが設定されていません"})
+					} else {
+						log.Fatalf("%v", err)
+					}
+				}
+			}
 		}
 		table.Render()
 	},
