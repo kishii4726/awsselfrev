@@ -44,6 +44,7 @@ to quickly create a Cobra application.`,
 			if *&v.ImageTagMutability == "MUTABLE" {
 				table.Append([]string{"ECR", level_warning, "タグの上書きが可能です(MUTABLE)"})
 			}
+			// imageのscanの確認
 			if *&v.ImageScanningConfiguration.ScanOnPush == false {
 				table.Append([]string{"ECR", level_warning, "イメージのスキャンが有効になっていません"})
 			}
