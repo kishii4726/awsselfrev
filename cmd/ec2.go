@@ -5,9 +5,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"context"
-	"log"
-
+	serviceec2 "aws-tacit-knowledge/pkg/aws/service/ec2"
 	"aws-tacit-knowledge/pkg/color"
 	"aws-tacit-knowledge/pkg/config"
 	"aws-tacit-knowledge/pkg/table"
@@ -30,38 +28,22 @@ to quickly create a Cobra application.`,
 		cfg := config.LoadConfig()
 		table := table.SetTable()
 		client := ec2.NewFromConfig(cfg)
-		level_info, level_warning, level_alert := color.SetLevelColor()
+		// level_info, level_warning, level_alert := color.SetLevelColor()
+		_, level_warning, level_alert := color.SetLevelColor()
+
 		// EBSの暗号化がデフォルト有効になっているか確認
-		resp, err := client.GetEbsEncryptionByDefault(context.TODO(), &ec2.GetEbsEncryptionByDefaultInput{})
-		if err != nil {
-			log.Fatalf("%v", err)
-		}
-		if *resp.EbsEncryptionByDefault == false {
+		if serviceec2.ConfirmEbsEncryptionByDefault(client) == false {
 			table.Append([]string{"EC2", level_warning, "EBSのデフォルトの暗号化が有効になっていません"})
 		}
-
-		resp2, err := client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{})
-		if err != nil {
-			log.Fatalf("%v", err)
+		// ボリュームの暗号化確認
+		for _, v := range serviceec2.ConfirmVolumeEncryption(client) {
+			table.Append([]string{"EC2", level_alert, v + "が暗号化されていません"})
 		}
-		for _, v := range resp2.Volumes {
-			if *v.Encrypted == false {
-				table.Append([]string{"EC2", level_alert, *v.VolumeId + "が暗号化されていません"})
-			}
+		// スナップショットの暗号化確認
+		for _, v := range serviceec2.ConfirmSnapshotEncryption(client) {
+			table.Append([]string{"EC2", level_alert, v + "が暗号化されていません"})
 		}
 
-		resp3, err := client.DescribeSnapshots(context.TODO(), &ec2.DescribeSnapshotsInput{
-			OwnerIds: []string{"self"},
-		})
-		if err != nil {
-			log.Fatalf("%v", err)
-		}
-		for _, v := range resp3.Snapshots {
-			// snapshotの暗号化確認
-			if *v.Encrypted == false {
-				table.Append([]string{"EC2", level_info, *v.SnapshotId + "が暗号化されていません"})
-			}
-		}
 		table.Render()
 	},
 }
