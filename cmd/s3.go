@@ -1,17 +1,11 @@
 package cmd
 
 import (
-	"context"
-	"errors"
-	"log"
-	"strings"
-
+	services3 "aws-tacit-knowledge/pkg/aws/service/s3"
 	"aws-tacit-knowledge/pkg/color"
 	"aws-tacit-knowledge/pkg/config"
 	"aws-tacit-knowledge/pkg/table"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/spf13/cobra"
 )
@@ -33,69 +27,20 @@ to quickly create a Cobra application.`,
 		// level_info, level_warning, level_alert := color.SetLevelColor()
 		_, level_warning, level_alert := color.SetLevelColor()
 
-		// s3バケット一覧取得
-		var s3_buckets []string
-		resp, err := client.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
-		if err != nil {
-			log.Fatalf("%v", err)
-		}
-		for _, v := range resp.Buckets {
-			s3_buckets = append(s3_buckets, *v.Name)
-		}
-
-		for _, v := range s3_buckets {
+		for _, bucket := range services3.ListBuckets(client) {
 			// 暗号化確認
-			_, err := client.GetBucketEncryption(context.TODO(), &s3.GetBucketEncryptionInput{
-				Bucket: aws.String(v),
-			})
-			if err != nil {
-				var re *awshttp.ResponseError
-				if errors.As(err, &re) {
-					if re.HTTPStatusCode() == 404 {
-						table.Append([]string{"S3", level_alert, v + "が暗号化されていません"})
-					} else if re.HTTPStatusCode() == 301 {
-					} else {
-						log.Fatalf("%v", err)
-					}
-				}
+			if services3.IsBucketEncrypted(client, bucket) == false {
+				table.Append([]string{"S3", level_alert, bucket + "が暗号化されていません"})
 			}
-
 			// パブリックアクセスブロック確認
-			resp, err := client.GetPublicAccessBlock(context.TODO(), &s3.GetPublicAccessBlockInput{
-				Bucket: aws.String(v),
-			})
-			_ = resp
-			if err != nil {
-				var re *awshttp.ResponseError
-				if errors.As(err, &re) {
-					if re.HTTPStatusCode() == 404 {
-						table.Append([]string{"S3", level_warning, v + "のパブリックアクセスブロックがすべてオフになっています"})
-					} else if re.HTTPStatusCode() == 301 {
-					} else {
-						log.Fatalf("%v", err)
-					}
-				}
+			if services3.IsBlockPublicAccessEnabled(client, bucket) == false {
+				table.Append([]string{"S3", level_warning, bucket + "のパブリックブロックアクセスがすべてオフになっています"})
 			}
-
 			// バケット名に`log`が含まれるバケットにライフサイクルルールが設定されているか確認
-			if strings.Contains(v, "log") {
-				_, err := client.GetBucketLifecycleConfiguration(context.TODO(), &s3.GetBucketLifecycleConfigurationInput{
-					Bucket: aws.String(v),
-				})
-				if err != nil {
-					var re *awshttp.ResponseError
-					if errors.As(err, &re) {
-						if re.HTTPStatusCode() == 404 {
-							table.Append([]string{"S3", level_warning, v + "にライフサイクルルールが設定されていません"})
-						} else if re.HTTPStatusCode() == 301 {
-						} else {
-							log.Fatalf("%v", err)
-						}
-					}
-				}
+			if services3.IsLifeCycleRuleConfiguredLogBucket(client, bucket) == false {
+				table.Append([]string{"S3", level_warning, bucket + "にライフサイクルルールが設定されていません"})
 			}
 		}
-
 		table.Render()
 	},
 }
