@@ -32,15 +32,15 @@ to quickly create a Cobra application.`,
 		_, level_warning, level_alert := color.SetLevelColor()
 
 		// EBSの暗号化がデフォルト有効になっているか確認
-		if serviceec2.ConfirmEbsEncryptionByDefault(client) == false {
+		if serviceec2.IsEbsDefaultEncryptionEnabled(client) == false {
 			table.Append([]string{"EC2", level_warning, "EBSのデフォルトの暗号化が有効になっていません"})
 		}
 		// ボリュームの暗号化確認
-		for _, v := range serviceec2.ConfirmVolumeEncryption(client) {
+		for _, v := range serviceec2.IsVolumeEncrypted(client) {
 			table.Append([]string{"EC2", level_alert, v + "が暗号化されていません"})
 		}
 		// スナップショットの暗号化確認
-		for _, v := range serviceec2.ConfirmSnapshotEncryption(client) {
+		for _, v := range serviceec2.IsSnapshotEncrypted(client) {
 			table.Append([]string{"EC2", level_alert, v + "が暗号化されていません"})
 		}
 
