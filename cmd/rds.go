@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"aws-tacit-knowledge/pkg/config"
+	"awsselfrev/pkg/config"
 
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/olekukonko/tablewriter"

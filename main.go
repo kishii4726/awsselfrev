@@ -1,7 +1,7 @@
 package main
 
 import (
-	"aws-tacit-knowledge/cmd"
+	"awsselfrev/cmd"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module aws-tacit-knowledge
+module awsselfrev
 
 go 1.17
 

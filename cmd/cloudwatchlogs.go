@@ -8,9 +8,9 @@ import (
 	"context"
 	"log"
 
-	"aws-tacit-knowledge/pkg/color"
-	"aws-tacit-knowledge/pkg/config"
-	"aws-tacit-knowledge/pkg/table"
+	"awsselfrev/pkg/color"
+	"awsselfrev/pkg/config"
+	"awsselfrev/pkg/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/spf13/cobra"

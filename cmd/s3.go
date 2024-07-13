@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	services3 "aws-tacit-knowledge/pkg/aws/service/s3"
-	"aws-tacit-knowledge/pkg/color"
-	"aws-tacit-knowledge/pkg/config"
-	"aws-tacit-knowledge/pkg/table"
+	services3 "awsselfrev/pkg/aws/service/s3"
+	"awsselfrev/pkg/color"
+	"awsselfrev/pkg/config"
+	"awsselfrev/pkg/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/spf13/cobra"

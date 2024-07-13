@@ -5,10 +5,10 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	serviceec2 "aws-tacit-knowledge/pkg/aws/service/ec2"
-	"aws-tacit-knowledge/pkg/color"
-	"aws-tacit-knowledge/pkg/config"
-	"aws-tacit-knowledge/pkg/table"
+	serviceec2 "awsselfrev/pkg/aws/service/ec2"
+	"awsselfrev/pkg/color"
+	"awsselfrev/pkg/config"
+	"awsselfrev/pkg/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/spf13/cobra"
