@@ -39,7 +39,7 @@ to quickly create a Cobra application.`,
 
 		for _, v := range resp.DBClusters {
 			// Storageの暗号化確認
-			if *&v.StorageEncrypted == false {
+			if v.StorageEncrypted != nil && !*v.StorageEncrypted {
 				data := append(data, []string{"RDS", "Alert", *v.DBClusterIdentifier + "のStorageが暗号化されていません"})
 				for _, v := range data {
 					table.Append(v)
@@ -68,7 +68,7 @@ to quickly create a Cobra application.`,
 				}
 				// 自動アップグレード
 				for _, db_instance := range resp.DBInstances {
-					if db_instance.AutoMinorVersionUpgrade == true {
+					if db_instance.AutoMinorVersionUpgrade != nil && *db_instance.AutoMinorVersionUpgrade {
 						data := append(data, []string{"RDS", "Warning", *db_instance.DBInstanceIdentifier + "のマイナーバージョン自動アップグレードが有効化されています"})
 						for _, v := range data {
 							table.Append(v)
