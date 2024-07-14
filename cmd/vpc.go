@@ -9,94 +9,82 @@ import (
 	"awsselfrev/pkg/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/spf13/cobra"
 )
 
-// vpcCmd represents the vpc command
 var vpcCmd = &cobra.Command{
 	Use:   "vpc",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Describe and check VPC attributes",
+	Long: `The "vpc" command allows you to describe and check various attributes of your VPCs.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+This command retrieves information about your VPCs and checks for the presence of the "Name" tag,
+as well as the status of DNS hostnames and DNS support. It then displays the results in a table format.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
 		table := table.SetTable()
 		client := ec2.NewFromConfig(cfg)
-		// level_info, level_warning, level_alert := color.SetLevelColor()
-		level_info, level_warning, _ := color.SetLevelColor()
+		levelInfo, levelWarning, _ := color.SetLevelColor()
 
 		resp, err := client.DescribeVpcs(context.TODO(), &ec2.DescribeVpcsInput{})
 		if err != nil {
-			log.Fatalf("%v", err)
+			log.Fatalf("Failed to describe VPCs: %v", err)
 		}
+
 		var data [][]string
-		for _, v := range resp.Vpcs {
-			// Nameタグの存在確認
-			vpc_id := *v.VpcId
-			var is_name_tag_exists bool
-			for _, v := range *&v.Tags {
-				if *v.Key == "Name" {
-					is_name_tag_exists = true
-				}
-			}
-			if is_name_tag_exists == false {
-				data := append(data, []string{"VPC", level_info, vpc_id + "にNameタグが設定されていません"})
-				for _, v := range data {
-					table.Append(v)
-				}
+		for _, vpc := range resp.Vpcs {
+			vpcID := *vpc.VpcId
+
+			if !hasNameTag(vpc.Tags) {
+				message := []string{"VPC", levelInfo, vpcID + "にNameタグが設定されていません"}
+				data = append(data, message)
 			}
 
-			// DNSホスト名の有効確認
-			enable_dns_hostnames, err := client.DescribeVpcAttribute(context.TODO(), &ec2.DescribeVpcAttributeInput{
-				VpcId:     &vpc_id,
-				Attribute: "enableDnsHostnames",
-			})
-			if err != nil {
-				log.Fatalf("%v", err)
-			}
-			if *enable_dns_hostnames.EnableDnsHostnames.Value == false {
-				data := append(data, []string{"VPC", level_warning, vpc_id + "のDNSホスト名が無効になっています"})
-				for _, v := range data {
-					table.Append(v)
-				}
+			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsHostnames) {
+				message := []string{"VPC", levelWarning, vpcID + "のDNSホスト名が無効になっています"}
+				data = append(data, message)
 			}
 
-			// DNS解決の有効確認
-			enable_dns_support, err := client.DescribeVpcAttribute(context.TODO(), &ec2.DescribeVpcAttributeInput{
-				VpcId:     &vpc_id,
-				Attribute: "enableDnsSupport",
-			})
-			if err != nil {
-				log.Fatalf("%v", err)
-			}
-			if *enable_dns_support.EnableDnsSupport.Value == false {
-				data := append(data, []string{"VPC", level_warning, vpc_id + "のDNS解決が無効になっています"})
-				for _, v := range data {
-					table.Append(v)
-				}
+			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsSupport) {
+				message := []string{"VPC", levelWarning, vpcID + "のDNS解決が無効になっています"}
+				data = append(data, message)
 			}
 		}
 
-		// ルートテーブル->NAT Gatewayの指定がAZ単位で揃っているか
+		for _, item := range data {
+			table.Append(item)
+		}
 
 		table.Render()
 	},
 }
 
+func hasNameTag(tags []types.Tag) bool {
+	for _, tag := range tags {
+		if *tag.Key == "Name" {
+			return true
+		}
+	}
+	return false
+}
+
+func isAttributeEnabled(client *ec2.Client, vpcID string, attribute types.VpcAttributeName) bool {
+	resp, err := client.DescribeVpcAttribute(context.TODO(), &ec2.DescribeVpcAttributeInput{
+		VpcId:     &vpcID,
+		Attribute: attribute,
+	})
+	if err != nil {
+		log.Fatalf("Failed to describe VPC attribute %s for VPC %s: %v", attribute, vpcID, err)
+	}
+	switch attribute {
+	case types.VpcAttributeNameEnableDnsHostnames:
+		return *resp.EnableDnsHostnames.Value
+	case types.VpcAttributeNameEnableDnsSupport:
+		return *resp.EnableDnsSupport.Value
+	}
+	return false
+}
+
 func init() {
 	rootCmd.AddCommand(vpcCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// vpcCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// vpcCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

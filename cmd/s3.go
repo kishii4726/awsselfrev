@@ -1,60 +1,50 @@
 package cmd
 
 import (
-	services3 "awsselfrev/pkg/aws/service/s3"
+	s3Pkg "awsselfrev/pkg/aws/service/s3"
 	"awsselfrev/pkg/color"
 	"awsselfrev/pkg/config"
-	"awsselfrev/pkg/table"
+	tablePkg "awsselfrev/pkg/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
-// s3Cmd represents the s3 command
 var s3Cmd = &cobra.Command{
 	Use:   "s3",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Check S3 bucket configurations",
+	Long: `The "s3" command allows you to check various configurations of your S3 buckets.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+It retrieves information about your S3 buckets and checks for encryption, public access block settings,
+and lifecycle rules for buckets with 'log' in their names. The results are displayed in a table format.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
-		table := table.SetTable()
+		table := tablePkg.SetTable()
 		client := s3.NewFromConfig(cfg)
-		// level_info, level_warning, level_alert := color.SetLevelColor()
-		_, level_warning, level_alert := color.SetLevelColor()
+		_, levelWarning, levelAlert := color.SetLevelColor()
 
-		for _, bucket := range services3.ListBuckets(client) {
-			// 暗号化確認
-			if services3.IsBucketEncrypted(client, bucket) == false {
-				table.Append([]string{"S3", level_alert, bucket + "が暗号化されていません"})
-			}
-			// パブリックアクセスブロック確認
-			if services3.IsBlockPublicAccessEnabled(client, bucket) == false {
-				table.Append([]string{"S3", level_warning, bucket + "のパブリックブロックアクセスがすべてオフになっています"})
-			}
-			// バケット名に`log`が含まれるバケットにライフサイクルルールが設定されているか確認
-			if services3.IsLifeCycleRuleConfiguredLogBucket(client, bucket) == false {
-				table.Append([]string{"S3", level_warning, bucket + "にライフサイクルルールが設定されていません"})
-			}
+		buckets := s3Pkg.ListBuckets(client)
+		for _, bucket := range buckets {
+			checkBucketConfigurations(client, bucket, table, levelWarning, levelAlert)
 		}
+
 		table.Render()
 	},
 }
 
+func checkBucketConfigurations(client *s3.Client, bucket string, table *tablewriter.Table, levelWarning, levelAlert string) {
+	if !s3Pkg.IsBucketEncrypted(client, bucket) {
+		table.Append([]string{"S3", levelAlert, bucket + "が暗号化されていません"})
+	}
+	if !s3Pkg.IsBlockPublicAccessEnabled(client, bucket) {
+		table.Append([]string{"S3", levelWarning, bucket + "のパブリックブロックアクセスがすべてオフになっています"})
+	}
+	if !s3Pkg.IsLifeCycleRuleConfiguredLogBucket(client, bucket) {
+		table.Append([]string{"S3", levelWarning, bucket + "にライフサイクルルールが設定されていません"})
+	}
+}
+
 func init() {
 	rootCmd.AddCommand(s3Cmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// s3Cmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// s3Cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

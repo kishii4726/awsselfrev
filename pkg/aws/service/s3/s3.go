@@ -12,51 +12,29 @@ import (
 )
 
 func ListBuckets(client *s3.Client) []string {
-	var l []string
+	var buckets []string
 	resp, err := client.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, v := range resp.Buckets {
-		l = append(l, *v.Name)
+	for _, bucket := range resp.Buckets {
+		buckets = append(buckets, *bucket.Name)
 	}
-	return l
+	return buckets
 }
 
 func IsBucketEncrypted(client *s3.Client, bucket string) bool {
 	_, err := client.GetBucketEncryption(context.TODO(), &s3.GetBucketEncryptionInput{
 		Bucket: aws.String(bucket),
 	})
-	if err != nil {
-		var re *awshttp.ResponseError
-		if errors.As(err, &re) {
-			if re.HTTPStatusCode() == 404 {
-				return false
-			} else if re.HTTPStatusCode() == 301 {
-			} else {
-				log.Fatal(err)
-			}
-		}
-	}
-	return true
+	return handleS3Error(err)
 }
 
 func IsBlockPublicAccessEnabled(client *s3.Client, bucket string) bool {
 	_, err := client.GetPublicAccessBlock(context.TODO(), &s3.GetPublicAccessBlockInput{
 		Bucket: aws.String(bucket),
 	})
-	if err != nil {
-		var re *awshttp.ResponseError
-		if errors.As(err, &re) {
-			if re.HTTPStatusCode() == 404 {
-				return false
-			} else if re.HTTPStatusCode() == 301 {
-			} else {
-				log.Fatal(err)
-			}
-		}
-	}
-	return true
+	return handleS3Error(err)
 }
 
 func IsLifeCycleRuleConfiguredLogBucket(client *s3.Client, bucket string) bool {
@@ -64,15 +42,19 @@ func IsLifeCycleRuleConfiguredLogBucket(client *s3.Client, bucket string) bool {
 		_, err := client.GetBucketLifecycleConfiguration(context.TODO(), &s3.GetBucketLifecycleConfigurationInput{
 			Bucket: aws.String(bucket),
 		})
-		if err != nil {
-			var re *awshttp.ResponseError
-			if errors.As(err, &re) {
-				if re.HTTPStatusCode() == 404 {
-					return false
-				} else if re.HTTPStatusCode() == 301 {
-				} else {
-					log.Fatal(err)
-				}
+		return handleS3Error(err)
+	}
+	return true
+}
+
+func handleS3Error(err error) bool {
+	if err != nil {
+		var re *awshttp.ResponseError
+		if errors.As(err, &re) {
+			if re.HTTPStatusCode() == 404 {
+				return false
+			} else if re.HTTPStatusCode() != 301 {
+				log.Fatal(err)
 			}
 		}
 	}

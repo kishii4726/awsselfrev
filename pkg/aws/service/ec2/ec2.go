@@ -7,40 +7,50 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
-func IsEbsDefaultEncryptionEnabled(client *ec2.Client) bool {
+func IsEbsDefaultEncryptionEnabled(client *ec2.Client) (bool, error) {
 	resp, err := client.GetEbsEncryptionByDefault(context.TODO(), &ec2.GetEbsEncryptionByDefaultInput{})
 	if err != nil {
-		log.Fatal(err)
+		return false, err
 	}
-	return *resp.EbsEncryptionByDefault
+	return *resp.EbsEncryptionByDefault, nil
 }
 
-func IsVolumeEncrypted(client *ec2.Client) []string {
-	var l []string
+func IsVolumeEncrypted(client *ec2.Client) ([]string, error) {
+	var unencryptedVolumes []string
 
 	resp, err := client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
+
 	for _, v := range resp.Volumes {
-		if *v.Encrypted == false {
-			l = append(l, *v.VolumeId)
+		if !*v.Encrypted {
+			unencryptedVolumes = append(unencryptedVolumes, *v.VolumeId)
 		}
 	}
-	return l
+	return unencryptedVolumes, nil
 }
 
-// todo errorハンドリング
-func IsSnapshotEncrypted(client *ec2.Client) []string {
-	var l []string
+func IsSnapshotEncrypted(client *ec2.Client) ([]string, error) {
+	var snapshotIDs []string
+
 	resp, err := client.DescribeSnapshots(context.TODO(), &ec2.DescribeSnapshotsInput{
 		OwnerIds: []string{"self"},
 	})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	for _, v := range resp.Snapshots {
-		l = append(l, *v.SnapshotId)
+
+	for _, snapshot := range resp.Snapshots {
+		snapshotIDs = append(snapshotIDs, *snapshot.SnapshotId)
 	}
-	return l
+	return snapshotIDs, nil
+}
+
+func HandleServiceError(err error) bool {
+	if err != nil {
+		log.Println("Service error:", err)
+		return false
+	}
+	return true
 }
