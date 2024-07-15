@@ -26,13 +26,13 @@ var ecrCmd = &cobra.Command{
 - Lifecycle policy`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
-		table := table.SetTable()
+		tbl := table.SetTable()
 		client := ecr.NewFromConfig(cfg)
 		level_info, level_warning, _ := color.SetLevelColor()
 
-		describeRepositories(client, table, level_warning, level_info)
+		describeRepositories(client, tbl, level_warning, level_info)
 
-		table.Render()
+		table.Render("ECR", tbl)
 	},
 }
 

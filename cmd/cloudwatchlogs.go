@@ -20,13 +20,13 @@ var cloudwatchlogsCmd = &cobra.Command{
 - Log group retention settings`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
-		table := table.SetTable()
+		tbl := table.SetTable()
 		client := cloudwatchlogs.NewFromConfig(cfg)
 		_, _, levelAlert := color.SetLevelColor()
 
-		checkLogGroupsRetention(client, table, levelAlert)
+		checkLogGroupsRetention(client, tbl, levelAlert)
 
-		table.Render()
+		table.Render("CloudWatchLogs", tbl)
 	},
 }
 

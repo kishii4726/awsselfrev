@@ -4,7 +4,7 @@ import (
 	s3Internal "awsselfrev/internal/aws/service/s3"
 	"awsselfrev/internal/color"
 	"awsselfrev/internal/config"
-	tableInternal "awsselfrev/internal/table"
+	"awsselfrev/internal/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/olekukonko/tablewriter"
@@ -20,16 +20,16 @@ It retrieves information about your S3 buckets and checks for encryption, public
 and lifecycle rules for buckets with 'log' in their names. The results are displayed in a table format.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
-		table := tableInternal.SetTable()
+		tbl := table.SetTable()
 		client := s3.NewFromConfig(cfg)
 		_, levelWarning, levelAlert := color.SetLevelColor()
 
 		buckets := s3Internal.ListBuckets(client)
 		for _, bucket := range buckets {
-			checkBucketConfigurations(client, bucket, table, levelWarning, levelAlert)
+			checkBucketConfigurations(client, bucket, tbl, levelWarning, levelAlert)
 		}
 
-		table.Render()
+		table.Render("S3", tbl)
 	},
 }
 

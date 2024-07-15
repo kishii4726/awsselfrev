@@ -22,7 +22,7 @@ This command retrieves information about your VPCs and checks for the presence o
 as well as the status of DNS hostnames and DNS support. It then displays the results in a table format.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
-		table := table.SetTable()
+		tbl := table.SetTable()
 		client := ec2.NewFromConfig(cfg)
 		levelInfo, levelWarning, _ := color.SetLevelColor()
 
@@ -52,10 +52,10 @@ as well as the status of DNS hostnames and DNS support. It then displays the res
 		}
 
 		for _, item := range data {
-			table.Append(item)
+			tbl.Append(item)
 		}
 
-		table.Render()
+		table.Render("VPC", tbl)
 	},
 }
 

@@ -3,9 +3,9 @@ package cmd
 import (
 	"context"
 	"log"
-	"os"
 
 	"awsselfrev/internal/config"
+	"awsselfrev/internal/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/aws/aws-sdk-go-v2/service/rds/types"
@@ -22,13 +22,12 @@ var rdsCmd = &cobra.Command{
 - Log exports`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Service", "LEVEL", "MESSAGE"})
+		tbl := table.SetTable()
 		client := rds.NewFromConfig(cfg)
 
-		checkRDSConfigurations(client, table)
+		checkRDSConfigurations(client, tbl)
 
-		table.Render()
+		table.Render("RDS", tbl)
 	},
 }
 
