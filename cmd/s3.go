@@ -35,13 +35,13 @@ and lifecycle rules for buckets with 'log' in their names. The results are displ
 
 func checkBucketConfigurations(client *s3.Client, bucket string, table *tablewriter.Table, levelWarning, levelAlert string) {
 	if !s3Internal.IsBucketEncrypted(client, bucket) {
-		table.Append([]string{"S3", levelAlert, "Bucket encryption is not set", bucket})
+		table.Append([]string{"S3", levelAlert, bucket, "Bucket encryption is not set"})
 	}
 	if !s3Internal.IsBlockPublicAccessEnabled(client, bucket) {
-		table.Append([]string{"S3", levelAlert, "Block public access is all off", bucket})
+		table.Append([]string{"S3", levelAlert, bucket, "Block public access is all off"})
 	}
 	if !s3Internal.IsLifeCycleRuleConfiguredLogBucket(client, bucket) {
-		table.Append([]string{"S3", levelWarning, "Lifecycle policy is not set", bucket})
+		table.Append([]string{"S3", levelWarning, bucket, "Lifecycle policy is not set"})
 	}
 }
 

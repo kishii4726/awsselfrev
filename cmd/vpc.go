@@ -37,22 +37,22 @@ as well as the status of DNS hostnames and DNS support. It also checks if VPC Fl
 			vpcID := *vpc.VpcId
 
 			if !hasNameTag(vpc.Tags) {
-				message := []string{"VPC", levelInfo, "Name tag is not set", vpcID}
+				message := []string{"VPC", levelInfo, vpcID, "Name tag is not set"}
 				data = append(data, message)
 			}
 
 			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsHostnames) {
-				message := []string{"VPC", levelWarning, "DNS hostname is not enabled", vpcID}
+				message := []string{"VPC", levelWarning, vpcID, "DNS hostname is not enabled"}
 				data = append(data, message)
 			}
 
 			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsSupport) {
-				message := []string{"VPC", levelWarning, "DNS support is not enabled", vpcID}
+				message := []string{"VPC", levelWarning, vpcID, "DNS support is not enabled"}
 				data = append(data, message)
 			}
 
 			if !isFlowLogsEnabled(client, vpcID) {
-				message := []string{"VPC", levelWarning, "VPC flow logs is not enabled", vpcID}
+				message := []string{"VPC", levelWarning, vpcID, "VPC flow logs is not enabled"}
 				data = append(data, message)
 			}
 		}
