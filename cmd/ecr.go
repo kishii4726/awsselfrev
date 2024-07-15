@@ -57,13 +57,13 @@ func describeRepositories(client *ecr.Client, table *tablewriter.Table, level_wa
 
 func checkTagImmutability(repo types.Repository, table *tablewriter.Table, level_warning string) {
 	if repo.ImageTagMutability == types.ImageTagMutabilityMutable {
-		table.Append([]string{"ECR", level_warning, *repo.RepositoryName + "でタグの上書きが可能です(MUTABLE)"})
+		table.Append([]string{"ECR", level_warning, *repo.RepositoryName, "Tags can be overwritten"})
 	}
 }
 
 func checkImageScanningConfiguration(repo types.Repository, table *tablewriter.Table, level_warning string) {
 	if !repo.ImageScanningConfiguration.ScanOnPush {
-		table.Append([]string{"ECR", level_warning, *repo.RepositoryName + "のイメージのスキャンが有効になっていません"})
+		table.Append([]string{"ECR", level_warning, *repo.RepositoryName, "Image scanning is not enabled"})
 	}
 }
 
@@ -74,7 +74,7 @@ func checkLifecyclePolicy(client *ecr.Client, repoName string, table *tablewrite
 	if err != nil {
 		var re *awshttp.ResponseError
 		if errors.As(err, &re) && re.HTTPStatusCode() == 400 {
-			table.Append([]string{"ECR", level_info, repoName + "にライフサイクルポリシーが設定されていません"})
+			table.Append([]string{"ECR", level_info, repoName, "Lifecycle policy is not set"})
 		} else {
 			log.Fatalf("Failed to describe lifecycle policy for repository %s: %v", repoName, err)
 		}

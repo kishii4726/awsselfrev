@@ -29,7 +29,7 @@ var ec2Cmd = &cobra.Command{
 			log.Fatalf("Failed to check EBS default encryption: %v", err)
 		}
 		if !ebsEncryptionEnabled {
-			tbl.Append([]string{"EC2", level_warning, "EBSのデフォルトの暗号化が有効になっていません"})
+			tbl.Append([]string{"EC2", level_warning, "-", "Default encryption for EBS is not set"})
 		}
 
 		unencryptedVolumes, err := ec2Internal.IsVolumeEncrypted(client)
@@ -37,7 +37,7 @@ var ec2Cmd = &cobra.Command{
 			log.Fatalf("Failed to check volume encryption: %v", err)
 		}
 		for _, v := range unencryptedVolumes {
-			tbl.Append([]string{"EC2", level_alert, v + "が暗号化されていません"})
+			tbl.Append([]string{"EC2", level_alert, v, "EBS encryption is not set"})
 		}
 
 		encryptedSnapshots, err := ec2Internal.IsSnapshotEncrypted(client)
@@ -45,7 +45,7 @@ var ec2Cmd = &cobra.Command{
 			log.Fatalf("Failed to check snapshot encryption: %v", err)
 		}
 		for _, v := range encryptedSnapshots {
-			tbl.Append([]string{"EC2", level_alert, v + "が暗号化されていません"})
+			tbl.Append([]string{"EC2", level_alert, v, "EBS encryption is not set"})
 		}
 
 		table.Render("EC2", tbl)

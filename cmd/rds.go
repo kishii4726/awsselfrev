@@ -47,19 +47,20 @@ func checkRDSConfigurations(client *rds.Client, table *tablewriter.Table) {
 
 func checkStorageEncryption(cluster types.DBCluster, table *tablewriter.Table) {
 	if cluster.StorageEncrypted != nil && !*cluster.StorageEncrypted {
-		table.Append([]string{"RDS", "Alert", *cluster.DBClusterIdentifier + "のStorageが暗号化されていません"})
+		table.Append([]string{"RDS", "Alert", "Storage encryption is not set", *cluster.DBClusterIdentifier})
 	}
 }
 
 func checkDeletionProtection(cluster types.DBCluster, table *tablewriter.Table) {
 	if cluster.DeletionProtection != nil && !*cluster.DeletionProtection {
-		table.Append([]string{"RDS", "Warning", *cluster.DBClusterIdentifier + "の削除保護が有効化されていません"})
+		table.Append([]string{"RDS", "Warning", "Delete protection is not enabled", *cluster.DBClusterIdentifier})
 	}
 }
 
+// TODO:ログ種別ごとに確認できるようにする
 func checkLogExports(cluster types.DBCluster, table *tablewriter.Table) {
 	if len(cluster.EnabledCloudwatchLogsExports) == 0 {
-		table.Append([]string{"RDS", "Warning", *cluster.DBClusterIdentifier + "でログ出力が設定されていません"})
+		table.Append([]string{"RDS", "Warning", "Log export is not set", *cluster.DBClusterIdentifier})
 	}
 }
 
@@ -80,7 +81,7 @@ func checkDBInstances(client *rds.Client, members []types.DBClusterMember, table
 
 func checkAutoMinorVersionUpgrade(instance types.DBInstance, table *tablewriter.Table) {
 	if instance.AutoMinorVersionUpgrade != nil && *instance.AutoMinorVersionUpgrade {
-		table.Append([]string{"RDS", "Warning", *instance.DBInstanceIdentifier + "のマイナーバージョン自動アップグレードが有効化されています"})
+		table.Append([]string{"RDS", "Warning", "Auto minor version upgrade is enabled", *instance.DBInstanceIdentifier})
 	}
 }
 

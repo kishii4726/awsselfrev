@@ -37,7 +37,7 @@ func checkLogGroupsRetention(client *cloudwatchlogs.Client, table *tablewriter.T
 	}
 	for _, logGroup := range resp.LogGroups {
 		if logGroup.RetentionInDays == nil {
-			table.Append([]string{"CloudWatchLogs", levelAlert, *logGroup.LogGroupName + "の保持期間が設定されていません"})
+			table.Append([]string{"CloudWatchLogs", levelAlert, *logGroup.LogGroupName, "Retention is set to never expire"})
 		}
 	}
 }
