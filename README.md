@@ -1,5 +1,14 @@
 # awsselfrev
 
+## Install
+```
+$ curl -OL <Release assets url>
+
+$ tar -zxvf <Download file name>
+
+$ sudo mv awsselfrev /usr/local/bin
+```
+
 ## Usage
 ```
 $ awsselfrev ecr
