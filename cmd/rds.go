@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"awsselfrev/internal/color"
 	"awsselfrev/internal/config"
 	"awsselfrev/internal/table"
 
@@ -25,46 +26,48 @@ var rdsCmd = &cobra.Command{
 		tbl := table.SetTable()
 		client := rds.NewFromConfig(cfg)
 
-		checkRDSConfigurations(client, tbl)
+		_, levelWarning, levelAlert := color.SetLevelColor()
+
+		checkRDSConfigurations(client, tbl, levelWarning, levelAlert)
 
 		table.Render("RDS", tbl)
 	},
 }
 
-func checkRDSConfigurations(client *rds.Client, table *tablewriter.Table) {
+func checkRDSConfigurations(client *rds.Client, table *tablewriter.Table, levelWarning string, levelAlert string) {
 	resp, err := client.DescribeDBClusters(context.TODO(), &rds.DescribeDBClustersInput{})
 	if err != nil {
 		log.Fatalf("Failed to describe DB clusters: %v", err)
 	}
 
 	for _, cluster := range resp.DBClusters {
-		checkStorageEncryption(cluster, table)
-		checkDeletionProtection(cluster, table)
-		checkLogExports(cluster, table)
-		checkDBInstances(client, cluster.DBClusterMembers, table)
+		checkStorageEncryption(cluster, table, levelAlert)
+		checkDeletionProtection(cluster, table, levelWarning)
+		checkLogExports(cluster, table, levelWarning)
+		checkDBInstances(client, cluster.DBClusterMembers, table, levelWarning)
 	}
 }
 
-func checkStorageEncryption(cluster types.DBCluster, table *tablewriter.Table) {
+func checkStorageEncryption(cluster types.DBCluster, table *tablewriter.Table, level string) {
 	if cluster.StorageEncrypted != nil && !*cluster.StorageEncrypted {
-		table.Append([]string{"RDS", "Alert", "Storage encryption is not set", *cluster.DBClusterIdentifier})
+		table.Append([]string{"RDS", level, "Storage encryption is not set", *cluster.DBClusterIdentifier})
 	}
 }
 
-func checkDeletionProtection(cluster types.DBCluster, table *tablewriter.Table) {
+func checkDeletionProtection(cluster types.DBCluster, table *tablewriter.Table, level string) {
 	if cluster.DeletionProtection != nil && !*cluster.DeletionProtection {
-		table.Append([]string{"RDS", "Warning", "Delete protection is not enabled", *cluster.DBClusterIdentifier})
+		table.Append([]string{"RDS", level, "Delete protection is not enabled", *cluster.DBClusterIdentifier})
 	}
 }
 
 // TODO:ログ種別ごとに確認できるようにする
-func checkLogExports(cluster types.DBCluster, table *tablewriter.Table) {
+func checkLogExports(cluster types.DBCluster, table *tablewriter.Table, level string) {
 	if len(cluster.EnabledCloudwatchLogsExports) == 0 {
-		table.Append([]string{"RDS", "Warning", "Log export is not set", *cluster.DBClusterIdentifier})
+		table.Append([]string{"RDS", level, "Log export is not set", *cluster.DBClusterIdentifier})
 	}
 }
 
-func checkDBInstances(client *rds.Client, members []types.DBClusterMember, table *tablewriter.Table) {
+func checkDBInstances(client *rds.Client, members []types.DBClusterMember, table *tablewriter.Table, level string) {
 	for _, member := range members {
 		resp, err := client.DescribeDBInstances(context.TODO(), &rds.DescribeDBInstancesInput{
 			DBInstanceIdentifier: member.DBInstanceIdentifier,
@@ -74,14 +77,14 @@ func checkDBInstances(client *rds.Client, members []types.DBClusterMember, table
 		}
 
 		for _, instance := range resp.DBInstances {
-			checkAutoMinorVersionUpgrade(instance, table)
+			checkAutoMinorVersionUpgrade(instance, table, level)
 		}
 	}
 }
 
-func checkAutoMinorVersionUpgrade(instance types.DBInstance, table *tablewriter.Table) {
+func checkAutoMinorVersionUpgrade(instance types.DBInstance, table *tablewriter.Table, level string) {
 	if instance.AutoMinorVersionUpgrade != nil && *instance.AutoMinorVersionUpgrade {
-		table.Append([]string{"RDS", "Warning", "Auto minor version upgrade is enabled", *instance.DBInstanceIdentifier})
+		table.Append([]string{"RDS", level, "Auto minor version upgrade is enabled", *instance.DBInstanceIdentifier})
 	}
 }
 
