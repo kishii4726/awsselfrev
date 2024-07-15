@@ -10,6 +10,7 @@ import (
 func SetTable() *tablewriter.Table {
 
 	table := tablewriter.NewWriter(os.Stdout)
+	table.SetAutoWrapText(false)
 	table.SetRowLine(true)
 	table.SetHeader([]string{"Service", "LEVEL", "MESSAGE"})
 
