@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	ec2Pkg "awsselfrev/pkg/aws/service/ec2"
-	"awsselfrev/pkg/color"
-	"awsselfrev/pkg/config"
-	"awsselfrev/pkg/table"
+	ec2Internal "awsselfrev/internal/aws/service/ec2"
+	"awsselfrev/internal/color"
+	"awsselfrev/internal/config"
+	"awsselfrev/internal/table"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -24,7 +24,7 @@ var ec2Cmd = &cobra.Command{
 		client := ec2.NewFromConfig(cfg)
 		_, level_warning, level_alert := color.SetLevelColor()
 
-		ebsEncryptionEnabled, err := ec2Pkg.IsEbsDefaultEncryptionEnabled(client)
+		ebsEncryptionEnabled, err := ec2Internal.IsEbsDefaultEncryptionEnabled(client)
 		if err != nil {
 			log.Fatalf("Failed to check EBS default encryption: %v", err)
 		}
@@ -32,7 +32,7 @@ var ec2Cmd = &cobra.Command{
 			table.Append([]string{"EC2", level_warning, "EBSのデフォルトの暗号化が有効になっていません"})
 		}
 
-		unencryptedVolumes, err := ec2Pkg.IsVolumeEncrypted(client)
+		unencryptedVolumes, err := ec2Internal.IsVolumeEncrypted(client)
 		if err != nil {
 			log.Fatalf("Failed to check volume encryption: %v", err)
 		}
@@ -40,7 +40,7 @@ var ec2Cmd = &cobra.Command{
 			table.Append([]string{"EC2", level_alert, v + "が暗号化されていません"})
 		}
 
-		encryptedSnapshots, err := ec2Pkg.IsSnapshotEncrypted(client)
+		encryptedSnapshots, err := ec2Internal.IsSnapshotEncrypted(client)
 		if err != nil {
 			log.Fatalf("Failed to check snapshot encryption: %v", err)
 		}

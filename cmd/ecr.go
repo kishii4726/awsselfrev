@@ -5,9 +5,9 @@ import (
 	"errors"
 	"log"
 
-	"awsselfrev/pkg/color"
-	"awsselfrev/pkg/config"
-	"awsselfrev/pkg/table"
+	"awsselfrev/internal/color"
+	"awsselfrev/internal/config"
+	"awsselfrev/internal/table"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"

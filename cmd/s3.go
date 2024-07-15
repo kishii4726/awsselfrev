@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	s3Pkg "awsselfrev/pkg/aws/service/s3"
-	"awsselfrev/pkg/color"
-	"awsselfrev/pkg/config"
-	tablePkg "awsselfrev/pkg/table"
+	s3Internal "awsselfrev/internal/aws/service/s3"
+	"awsselfrev/internal/color"
+	"awsselfrev/internal/config"
+	tableInternal "awsselfrev/internal/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/olekukonko/tablewriter"
@@ -20,11 +20,11 @@ It retrieves information about your S3 buckets and checks for encryption, public
 and lifecycle rules for buckets with 'log' in their names. The results are displayed in a table format.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
-		table := tablePkg.SetTable()
+		table := tableInternal.SetTable()
 		client := s3.NewFromConfig(cfg)
 		_, levelWarning, levelAlert := color.SetLevelColor()
 
-		buckets := s3Pkg.ListBuckets(client)
+		buckets := s3Internal.ListBuckets(client)
 		for _, bucket := range buckets {
 			checkBucketConfigurations(client, bucket, table, levelWarning, levelAlert)
 		}
@@ -34,13 +34,13 @@ and lifecycle rules for buckets with 'log' in their names. The results are displ
 }
 
 func checkBucketConfigurations(client *s3.Client, bucket string, table *tablewriter.Table, levelWarning, levelAlert string) {
-	if !s3Pkg.IsBucketEncrypted(client, bucket) {
+	if !s3Internal.IsBucketEncrypted(client, bucket) {
 		table.Append([]string{"S3", levelAlert, bucket + "が暗号化されていません"})
 	}
-	if !s3Pkg.IsBlockPublicAccessEnabled(client, bucket) {
+	if !s3Internal.IsBlockPublicAccessEnabled(client, bucket) {
 		table.Append([]string{"S3", levelWarning, bucket + "のパブリックブロックアクセスがすべてオフになっています"})
 	}
-	if !s3Pkg.IsLifeCycleRuleConfiguredLogBucket(client, bucket) {
+	if !s3Internal.IsLifeCycleRuleConfiguredLogBucket(client, bucket) {
 		table.Append([]string{"S3", levelWarning, bucket + "にライフサイクルルールが設定されていません"})
 	}
 }

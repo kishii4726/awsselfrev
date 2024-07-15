@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"awsselfrev/pkg/color"
-	"awsselfrev/pkg/config"
-	"awsselfrev/pkg/table"
+	"awsselfrev/internal/color"
+	"awsselfrev/internal/config"
+	"awsselfrev/internal/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"

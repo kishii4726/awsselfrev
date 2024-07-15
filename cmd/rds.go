@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"awsselfrev/pkg/config"
+	"awsselfrev/internal/config"
 
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/aws/aws-sdk-go-v2/service/rds/types"
