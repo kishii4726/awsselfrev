@@ -8,6 +8,7 @@ import (
 	"awsselfrev/internal/config"
 	"awsselfrev/internal/table"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/spf13/cobra"
@@ -19,7 +20,7 @@ var vpcCmd = &cobra.Command{
 	Long: `The "vpc" command allows you to describe and check various attributes of your VPCs.
 
 This command retrieves information about your VPCs and checks for the presence of the "Name" tag,
-as well as the status of DNS hostnames and DNS support. It then displays the results in a table format.`,
+as well as the status of DNS hostnames and DNS support. It also checks if VPC Flow Logs are enabled.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
 		tbl := table.SetTable()
@@ -47,6 +48,11 @@ as well as the status of DNS hostnames and DNS support. It then displays the res
 
 			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsSupport) {
 				message := []string{"VPC", levelWarning, vpcID + "のDNS解決が無効になっています"}
+				data = append(data, message)
+			}
+
+			if !isFlowLogsEnabled(client, vpcID) {
+				message := []string{"VPC", levelWarning, vpcID + "のVPCFlowLogsが有効化されていません"}
 				data = append(data, message)
 			}
 		}
@@ -83,6 +89,24 @@ func isAttributeEnabled(client *ec2.Client, vpcID string, attribute types.VpcAtt
 		return *resp.EnableDnsSupport.Value
 	}
 	return false
+}
+
+func isFlowLogsEnabled(client *ec2.Client, vpcID string) bool {
+	describeFlowLogsInput := &ec2.DescribeFlowLogsInput{
+		Filter: []types.Filter{
+			{
+				Name:   aws.String("resource-id"),
+				Values: []string{vpcID},
+			},
+		},
+	}
+
+	resp, err := client.DescribeFlowLogs(context.TODO(), describeFlowLogsInput)
+	if err != nil {
+		log.Fatalf("Failed to describe flow logs for VPC %s: %v", vpcID, err)
+	}
+
+	return len(resp.FlowLogs) > 0
 }
 
 func init() {
