@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.170.0
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.30.3
 	github.com/aws/aws-sdk-go-v2/service/rds v1.81.4
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.58.2
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.58.3
 	github.com/fatih/color v1.17.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.8.1
