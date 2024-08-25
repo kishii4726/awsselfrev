@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version string
+
 var rootCmd = &cobra.Command{
 	Use:   "awsselfrev",
 	Short: "A brief description of your application",
@@ -15,6 +17,7 @@ examples and usage of using your application. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	Version: version,
 }
 
 func Execute() {
