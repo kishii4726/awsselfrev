@@ -7,13 +7,28 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - env:
+  - id: awsselfrev-linux
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
+    ldflags:
+      - "-X main.version={{.Version}}"
+
+  - id: awsselfrev-windows
+    env:
+      - CGO_ENABLED=0
+    goos:
       - windows
+    ldflags:
+      - "-X main.version={{.Version}}"
+
+  - id: awsselfrev-darwin
+    env:
+      - CGO_ENABLED=0
+    goos:
       - darwin
-  - ldflags:
+    ldflags:
       - "-X main.version={{.Version}}"
 
 archives:
