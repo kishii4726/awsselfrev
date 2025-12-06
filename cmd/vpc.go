@@ -23,9 +23,10 @@ This command retrieves information about your VPCs and checks for the presence o
 as well as the status of DNS hostnames and DNS support. It also checks if VPC Flow Logs are enabled.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
+		rules := config.LoadRules()
 		tbl := table.SetTable()
 		client := ec2.NewFromConfig(cfg)
-		levelInfo, levelWarning, _ := color.SetLevelColor()
+		_, _, _ = color.SetLevelColor()
 
 		resp, err := client.DescribeVpcs(context.TODO(), &ec2.DescribeVpcsInput{})
 		if err != nil {
@@ -37,22 +38,26 @@ as well as the status of DNS hostnames and DNS support. It also checks if VPC Fl
 			vpcID := *vpc.VpcId
 
 			if !hasNameTag(vpc.Tags) {
-				message := []string{"VPC", levelInfo, vpcID, "Name tag is not set"}
+				rule := rules.Rules["vpc-name-tag"]
+				message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
 				data = append(data, message)
 			}
 
 			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsHostnames) {
-				message := []string{"VPC", levelWarning, vpcID, "DNS hostname is not enabled"}
+				rule := rules.Rules["vpc-dns-hostname"]
+				message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
 				data = append(data, message)
 			}
 
 			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsSupport) {
-				message := []string{"VPC", levelWarning, vpcID, "DNS support is not enabled"}
+				rule := rules.Rules["vpc-dns-support"]
+				message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
 				data = append(data, message)
 			}
 
 			if !isFlowLogsEnabled(client, vpcID) {
-				message := []string{"VPC", levelWarning, vpcID, "VPC flow logs is not enabled"}
+				rule := rules.Rules["vpc-flow-logs"]
+				message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
 				data = append(data, message)
 			}
 		}

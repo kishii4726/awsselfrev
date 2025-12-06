@@ -26,11 +26,12 @@ var ecrCmd = &cobra.Command{
 - Lifecycle policy`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
+		rules := config.LoadRules()
 		tbl := table.SetTable()
 		client := ecr.NewFromConfig(cfg)
-		levelInfo, levelWarning, _ := color.SetLevelColor()
+		_, _, _ = color.SetLevelColor()
 
-		describeRepositories(client, tbl, levelWarning, levelInfo)
+		describeRepositories(client, tbl, rules)
 
 		table.Render("ECR", tbl)
 	},
@@ -40,7 +41,7 @@ func init() {
 	rootCmd.AddCommand(ecrCmd)
 }
 
-func describeRepositories(client *ecr.Client, table *tablewriter.Table, levelWarning string, levelInfo string) {
+func describeRepositories(client *ecr.Client, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeRepositories(context.TODO(), &ecr.DescribeRepositoriesInput{
 		MaxResults: aws.Int32(100),
 	})
@@ -49,32 +50,35 @@ func describeRepositories(client *ecr.Client, table *tablewriter.Table, levelWar
 	}
 
 	for _, repo := range resp.Repositories {
-		checkTagImmutability(repo, table, levelWarning)
-		checkImageScanningConfiguration(repo, table, levelWarning)
-		checkLifecyclePolicy(client, *repo.RepositoryName, table, levelInfo)
+		checkTagImmutability(repo, table, rules)
+		checkImageScanningConfiguration(repo, table, rules)
+		checkLifecyclePolicy(client, *repo.RepositoryName, table, rules)
 	}
 }
 
-func checkTagImmutability(repo types.Repository, table *tablewriter.Table, levelWarning string) {
+func checkTagImmutability(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
 	if repo.ImageTagMutability == types.ImageTagMutabilityMutable {
-		table.Append([]string{"ECR", levelWarning, *repo.RepositoryName, "Tags can be overwritten"})
+		rule := rules.Rules["ecr-tag-immutability"]
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
 	}
 }
 
-func checkImageScanningConfiguration(repo types.Repository, table *tablewriter.Table, levelWarning string) {
+func checkImageScanningConfiguration(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
 	if !repo.ImageScanningConfiguration.ScanOnPush {
-		table.Append([]string{"ECR", levelWarning, *repo.RepositoryName, "Image scanning is not enabled"})
+		rule := rules.Rules["ecr-image-scanning"]
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
 	}
 }
 
-func checkLifecyclePolicy(client *ecr.Client, repoName string, table *tablewriter.Table, levelInfo string) {
+func checkLifecyclePolicy(client *ecr.Client, repoName string, table *tablewriter.Table, rules config.RulesConfig) {
 	_, err := client.GetLifecyclePolicy(context.TODO(), &ecr.GetLifecyclePolicyInput{
 		RepositoryName: aws.String(repoName),
 	})
 	if err != nil {
 		var re *awshttp.ResponseError
 		if errors.As(err, &re) && re.HTTPStatusCode() == 400 {
-			table.Append([]string{"ECR", levelInfo, repoName, "Lifecycle policy is not set"})
+			rule := rules.Rules["ecr-lifecycle-policy"]
+			table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), repoName, rule.Issue})
 		} else {
 			log.Fatalf("Failed to describe lifecycle policy for repository %s: %v", repoName, err)
 		}

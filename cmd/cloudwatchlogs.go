@@ -20,24 +20,26 @@ var cloudwatchlogsCmd = &cobra.Command{
 - Log group retention settings`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
+		rules := config.LoadRules()
 		tbl := table.SetTable()
 		client := cloudwatchlogs.NewFromConfig(cfg)
-		_, _, levelAlert := color.SetLevelColor()
+		_, _, _ = color.SetLevelColor()
 
-		checkLogGroupsRetention(client, tbl, levelAlert)
+		checkLogGroupsRetention(client, tbl, rules)
 
 		table.Render("CloudWatchLogs", tbl)
 	},
 }
 
-func checkLogGroupsRetention(client *cloudwatchlogs.Client, table *tablewriter.Table, levelAlert string) {
+func checkLogGroupsRetention(client *cloudwatchlogs.Client, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeLogGroups(context.TODO(), &cloudwatchlogs.DescribeLogGroupsInput{})
 	if err != nil {
 		log.Fatalf("Failed to describe log groups: %v", err)
 	}
 	for _, logGroup := range resp.LogGroups {
 		if logGroup.RetentionInDays == nil {
-			table.Append([]string{"CloudWatchLogs", levelAlert, *logGroup.LogGroupName, "Retention is set to never expire"})
+			rule := rules.Rules["cloudwatch-retention"]
+			table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, rule.Issue})
 		}
 	}
 }

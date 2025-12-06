@@ -20,16 +20,18 @@ var ec2Cmd = &cobra.Command{
 - Snapshot encryption`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
+		rules := config.LoadRules()
 		tbl := table.SetTable()
 		client := ec2.NewFromConfig(cfg)
-		_, levelWarning, levelAlert := color.SetLevelColor()
+		_, _, _ = color.SetLevelColor()
 
 		ebsEncryptionEnabled, err := ec2Internal.IsEbsDefaultEncryptionEnabled(client)
 		if err != nil {
 			log.Fatalf("Failed to check EBS default encryption: %v", err)
 		}
 		if !ebsEncryptionEnabled {
-			tbl.Append([]string{"EC2", levelWarning, "-", "Default encryption for EBS is not set"})
+			rule := rules.Rules["ec2-ebs-default-encryption"]
+			tbl.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), "-", rule.Issue})
 		}
 
 		unencryptedVolumes, err := ec2Internal.IsVolumeEncrypted(client)
@@ -37,7 +39,8 @@ var ec2Cmd = &cobra.Command{
 			log.Fatalf("Failed to check volume encryption: %v", err)
 		}
 		for _, v := range unencryptedVolumes {
-			tbl.Append([]string{"EC2", levelAlert, v, "EBS encryption is not set"})
+			rule := rules.Rules["ec2-volume-encryption"]
+			tbl.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), v, rule.Issue})
 		}
 
 		encryptedSnapshots, err := ec2Internal.IsSnapshotEncrypted(client)
@@ -45,7 +48,8 @@ var ec2Cmd = &cobra.Command{
 			log.Fatalf("Failed to check snapshot encryption: %v", err)
 		}
 		for _, v := range encryptedSnapshots {
-			tbl.Append([]string{"EC2", levelAlert, v, "EBS encryption is not set"})
+			rule := rules.Rules["ec2-snapshot-encryption"]
+			tbl.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), v, rule.Issue})
 		}
 
 		table.Render("EC2", tbl)

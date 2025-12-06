@@ -23,51 +23,53 @@ var rdsCmd = &cobra.Command{
 - Log exports`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
+		rules := config.LoadRules()
 		tbl := table.SetTable()
 		client := rds.NewFromConfig(cfg)
 
-		_, levelWarning, levelAlert := color.SetLevelColor()
-
-		checkRDSConfigurations(client, tbl, levelWarning, levelAlert)
+		checkRDSConfigurations(client, tbl, rules)
 
 		table.Render("RDS", tbl)
 	},
 }
 
-func checkRDSConfigurations(client *rds.Client, table *tablewriter.Table, levelWarning string, levelAlert string) {
+func checkRDSConfigurations(client *rds.Client, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeDBClusters(context.TODO(), &rds.DescribeDBClustersInput{})
 	if err != nil {
 		log.Fatalf("Failed to describe DB clusters: %v", err)
 	}
 
 	for _, cluster := range resp.DBClusters {
-		checkStorageEncryption(cluster, table, levelAlert)
-		checkDeletionProtection(cluster, table, levelWarning)
-		checkLogExports(cluster, table, levelWarning)
-		checkDBInstances(client, cluster.DBClusterMembers, table, levelWarning)
+		checkStorageEncryption(cluster, table, rules)
+		checkDeletionProtection(cluster, table, rules)
+		checkLogExports(cluster, table, rules)
+		checkDBInstances(client, cluster.DBClusterMembers, table, rules)
 	}
 }
 
-func checkStorageEncryption(cluster types.DBCluster, table *tablewriter.Table, level string) {
+func checkStorageEncryption(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
 	if cluster.StorageEncrypted != nil && !*cluster.StorageEncrypted {
-		table.Append([]string{"RDS", level, "Storage encryption is not set", *cluster.DBClusterIdentifier})
+		rule := rules.Rules["rds-storage-encryption"]
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, rule.Issue})
 	}
 }
 
-func checkDeletionProtection(cluster types.DBCluster, table *tablewriter.Table, level string) {
+func checkDeletionProtection(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
 	if cluster.DeletionProtection != nil && !*cluster.DeletionProtection {
-		table.Append([]string{"RDS", level, "Delete protection is not enabled", *cluster.DBClusterIdentifier})
+		rule := rules.Rules["rds-deletion-protection"]
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, rule.Issue})
 	}
 }
 
 // TODO:ログ種別ごとに確認できるようにする
-func checkLogExports(cluster types.DBCluster, table *tablewriter.Table, level string) {
+func checkLogExports(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
 	if len(cluster.EnabledCloudwatchLogsExports) == 0 {
-		table.Append([]string{"RDS", level, "Log export is not set", *cluster.DBClusterIdentifier})
+		rule := rules.Rules["rds-log-export"]
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, rule.Issue})
 	}
 }
 
-func checkDBInstances(client *rds.Client, members []types.DBClusterMember, table *tablewriter.Table, level string) {
+func checkDBInstances(client *rds.Client, members []types.DBClusterMember, table *tablewriter.Table, rules config.RulesConfig) {
 	for _, member := range members {
 		resp, err := client.DescribeDBInstances(context.TODO(), &rds.DescribeDBInstancesInput{
 			DBInstanceIdentifier: member.DBInstanceIdentifier,
@@ -77,14 +79,15 @@ func checkDBInstances(client *rds.Client, members []types.DBClusterMember, table
 		}
 
 		for _, instance := range resp.DBInstances {
-			checkAutoMinorVersionUpgrade(instance, table, level)
+			checkAutoMinorVersionUpgrade(instance, table, rules)
 		}
 	}
 }
 
-func checkAutoMinorVersionUpgrade(instance types.DBInstance, table *tablewriter.Table, level string) {
+func checkAutoMinorVersionUpgrade(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
 	if instance.AutoMinorVersionUpgrade != nil && *instance.AutoMinorVersionUpgrade {
-		table.Append([]string{"RDS", level, "Auto minor version upgrade is enabled", *instance.DBInstanceIdentifier})
+		rule := rules.Rules["rds-auto-minor-version-upgrade"]
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, rule.Issue})
 	}
 }
 

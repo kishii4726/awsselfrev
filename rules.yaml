@@ -1,0 +1,73 @@
+rules:
+  s3-encryption:
+    service: S3
+    level: Alert
+    issue: Bucket encryption is not set
+  s3-public-access:
+    service: S3
+    level: Alert
+    issue: Block public access is all off
+  s3-lifecycle:
+    service: S3
+    level: Warning
+    issue: Lifecycle policy is not set
+  ec2-ebs-default-encryption:
+    service: EC2
+    level: Warning
+    issue: Default encryption for EBS is not set
+  ec2-volume-encryption:
+    service: EC2
+    level: Alert
+    issue: EBS encryption is not set
+  ec2-snapshot-encryption:
+    service: EC2
+    level: Alert
+    issue: EBS encryption is not set
+  rds-storage-encryption:
+    service: RDS
+    level: Alert
+    issue: Storage encryption is not set
+  rds-deletion-protection:
+    service: RDS
+    level: Warning
+    issue: Delete protection is not enabled
+  rds-log-export:
+    service: RDS
+    level: Warning
+    issue: Log export is not set
+  rds-auto-minor-version-upgrade:
+    service: RDS
+    level: Warning
+    issue: Auto minor version upgrade is enabled
+  vpc-name-tag:
+    service: VPC
+    level: Info
+    issue: Name tag is not set
+  vpc-dns-hostname:
+    service: VPC
+    level: Warning
+    issue: DNS hostname is not enabled
+  vpc-dns-support:
+    service: VPC
+    level: Warning
+    issue: DNS support is not enabled
+  vpc-flow-logs:
+    service: VPC
+    level: Warning
+    issue: VPC flow logs is not enabled
+  cloudwatch-retention:
+    service: CloudWatchLogs
+    level: Alert
+    issue: Retention is set to never expire
+  ecr-tag-immutability:
+    service: ECR
+    level: Warning
+    issue: Tags can be overwritten
+  ecr-image-scanning:
+    service: ECR
+    level: Warning
+    issue: Image scanning is not enabled
+  ecr-lifecycle-policy:
+    service: ECR
+    level: Info
+    issue: Lifecycle policy is not set
