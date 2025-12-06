@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 
+	"awsselfrev/internal/aws/api"
 	"awsselfrev/internal/color"
 	"awsselfrev/internal/config"
 	"awsselfrev/internal/table"
@@ -41,7 +42,7 @@ func init() {
 	rootCmd.AddCommand(ecrCmd)
 }
 
-func describeRepositories(client *ecr.Client, table *tablewriter.Table, rules config.RulesConfig) {
+func describeRepositories(client api.ECRClient, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeRepositories(context.TODO(), &ecr.DescribeRepositoriesInput{
 		MaxResults: aws.Int32(100),
 	})
@@ -58,26 +59,26 @@ func describeRepositories(client *ecr.Client, table *tablewriter.Table, rules co
 
 func checkTagImmutability(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
 	if repo.ImageTagMutability == types.ImageTagMutabilityMutable {
-		rule := rules.Rules["ecr-tag-immutability"]
+		rule := rules.Get("ecr-tag-immutability")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
 	}
 }
 
 func checkImageScanningConfiguration(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
 	if !repo.ImageScanningConfiguration.ScanOnPush {
-		rule := rules.Rules["ecr-image-scanning"]
+		rule := rules.Get("ecr-image-scanning")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
 	}
 }
 
-func checkLifecyclePolicy(client *ecr.Client, repoName string, table *tablewriter.Table, rules config.RulesConfig) {
+func checkLifecyclePolicy(client api.ECRClient, repoName string, table *tablewriter.Table, rules config.RulesConfig) {
 	_, err := client.GetLifecyclePolicy(context.TODO(), &ecr.GetLifecyclePolicyInput{
 		RepositoryName: aws.String(repoName),
 	})
 	if err != nil {
 		var re *awshttp.ResponseError
 		if errors.As(err, &re) && re.HTTPStatusCode() == 400 {
-			rule := rules.Rules["ecr-lifecycle-policy"]
+			rule := rules.Get("ecr-lifecycle-policy")
 			table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), repoName, rule.Issue})
 		} else {
 			log.Fatalf("Failed to describe lifecycle policy for repository %s: %v", repoName, err)

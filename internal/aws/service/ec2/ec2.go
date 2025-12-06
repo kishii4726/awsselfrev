@@ -1,13 +1,14 @@
 package service
 
 import (
+	"awsselfrev/internal/aws/api"
 	"context"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
-func IsEbsDefaultEncryptionEnabled(client *ec2.Client) (bool, error) {
+func IsEbsDefaultEncryptionEnabled(client api.EC2Client) (bool, error) {
 	resp, err := client.GetEbsEncryptionByDefault(context.TODO(), &ec2.GetEbsEncryptionByDefaultInput{})
 	if err != nil {
 		return false, err
@@ -15,7 +16,7 @@ func IsEbsDefaultEncryptionEnabled(client *ec2.Client) (bool, error) {
 	return *resp.EbsEncryptionByDefault, nil
 }
 
-func IsVolumeEncrypted(client *ec2.Client) ([]string, error) {
+func IsVolumeEncrypted(client api.EC2Client) ([]string, error) {
 	var unencryptedVolumes []string
 
 	resp, err := client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{})
@@ -31,7 +32,7 @@ func IsVolumeEncrypted(client *ec2.Client) ([]string, error) {
 	return unencryptedVolumes, nil
 }
 
-func IsSnapshotEncrypted(client *ec2.Client) ([]string, error) {
+func IsSnapshotEncrypted(client api.EC2Client) ([]string, error) {
 	var snapshotIDs []string
 
 	resp, err := client.DescribeSnapshots(context.TODO(), &ec2.DescribeSnapshotsInput{

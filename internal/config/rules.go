@@ -30,3 +30,13 @@ func LoadRules() RulesConfig {
 
 	return rules
 }
+
+// Get safely retrieves a rule by key. If missing, allows fallback or fatal exit.
+// Currently logging fatal to ensure configuration consistency.
+func (r RulesConfig) Get(key string) Rule {
+	rule, ok := r.Rules[key]
+	if !ok {
+		log.Fatalf("Rule not found for key: %s", key)
+	}
+	return rule
+}

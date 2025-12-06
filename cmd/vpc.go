@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"awsselfrev/internal/aws/api"
 	"awsselfrev/internal/color"
 	"awsselfrev/internal/config"
 	"awsselfrev/internal/table"
@@ -38,25 +39,25 @@ as well as the status of DNS hostnames and DNS support. It also checks if VPC Fl
 			vpcID := *vpc.VpcId
 
 			if !hasNameTag(vpc.Tags) {
-				rule := rules.Rules["vpc-name-tag"]
+				rule := rules.Get("vpc-name-tag")
 				message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
 				data = append(data, message)
 			}
 
 			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsHostnames) {
-				rule := rules.Rules["vpc-dns-hostname"]
+				rule := rules.Get("vpc-dns-hostname")
 				message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
 				data = append(data, message)
 			}
 
 			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsSupport) {
-				rule := rules.Rules["vpc-dns-support"]
+				rule := rules.Get("vpc-dns-support")
 				message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
 				data = append(data, message)
 			}
 
 			if !isFlowLogsEnabled(client, vpcID) {
-				rule := rules.Rules["vpc-flow-logs"]
+				rule := rules.Get("vpc-flow-logs")
 				message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
 				data = append(data, message)
 			}
@@ -79,7 +80,7 @@ func hasNameTag(tags []types.Tag) bool {
 	return false
 }
 
-func isAttributeEnabled(client *ec2.Client, vpcID string, attribute types.VpcAttributeName) bool {
+func isAttributeEnabled(client api.EC2Client, vpcID string, attribute types.VpcAttributeName) bool {
 	resp, err := client.DescribeVpcAttribute(context.TODO(), &ec2.DescribeVpcAttributeInput{
 		VpcId:     &vpcID,
 		Attribute: attribute,
@@ -96,7 +97,7 @@ func isAttributeEnabled(client *ec2.Client, vpcID string, attribute types.VpcAtt
 	return false
 }
 
-func isFlowLogsEnabled(client *ec2.Client, vpcID string) bool {
+func isFlowLogsEnabled(client api.EC2Client, vpcID string) bool {
 	describeFlowLogsInput := &ec2.DescribeFlowLogsInput{
 		Filter: []types.Filter{
 			{

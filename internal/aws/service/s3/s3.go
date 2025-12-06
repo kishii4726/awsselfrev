@@ -1,17 +1,17 @@
 package service
 
 import (
+	"awsselfrev/internal/aws/api"
 	"context"
 	"errors"
 	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func ListBuckets(client *s3.Client) []string {
+func ListBuckets(client api.S3Client) []string {
 	var buckets []string
 	resp, err := client.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
 	if err != nil {
@@ -23,21 +23,21 @@ func ListBuckets(client *s3.Client) []string {
 	return buckets
 }
 
-func IsBucketEncrypted(client *s3.Client, bucket string) bool {
+func IsBucketEncrypted(client api.S3Client, bucket string) bool {
 	_, err := client.GetBucketEncryption(context.TODO(), &s3.GetBucketEncryptionInput{
 		Bucket: aws.String(bucket),
 	})
 	return handleS3Error(err)
 }
 
-func IsBlockPublicAccessEnabled(client *s3.Client, bucket string) bool {
+func IsBlockPublicAccessEnabled(client api.S3Client, bucket string) bool {
 	_, err := client.GetPublicAccessBlock(context.TODO(), &s3.GetPublicAccessBlockInput{
 		Bucket: aws.String(bucket),
 	})
 	return handleS3Error(err)
 }
 
-func IsLifeCycleRuleConfiguredLogBucket(client *s3.Client, bucket string) bool {
+func IsLifeCycleRuleConfiguredLogBucket(client api.S3Client, bucket string) bool {
 	if strings.Contains(bucket, "log") {
 		_, err := client.GetBucketLifecycleConfiguration(context.TODO(), &s3.GetBucketLifecycleConfigurationInput{
 			Bucket: aws.String(bucket),
@@ -47,13 +47,17 @@ func IsLifeCycleRuleConfiguredLogBucket(client *s3.Client, bucket string) bool {
 	return true
 }
 
+type HTTPStatusError interface {
+	HTTPStatusCode() int
+}
+
 func handleS3Error(err error) bool {
 	if err != nil {
-		var re *awshttp.ResponseError
-		if errors.As(err, &re) {
-			if re.HTTPStatusCode() == 404 {
+		var se HTTPStatusError
+		if errors.As(err, &se) {
+			if se.HTTPStatusCode() == 404 {
 				return false
-			} else if re.HTTPStatusCode() != 301 {
+			} else if se.HTTPStatusCode() != 301 {
 				log.Fatal(err)
 			}
 		}

@@ -30,7 +30,7 @@ var ec2Cmd = &cobra.Command{
 			log.Fatalf("Failed to check EBS default encryption: %v", err)
 		}
 		if !ebsEncryptionEnabled {
-			rule := rules.Rules["ec2-ebs-default-encryption"]
+			rule := rules.Get("ec2-ebs-default-encryption")
 			tbl.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), "-", rule.Issue})
 		}
 
@@ -39,7 +39,7 @@ var ec2Cmd = &cobra.Command{
 			log.Fatalf("Failed to check volume encryption: %v", err)
 		}
 		for _, v := range unencryptedVolumes {
-			rule := rules.Rules["ec2-volume-encryption"]
+			rule := rules.Get("ec2-volume-encryption")
 			tbl.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), v, rule.Issue})
 		}
 
@@ -48,7 +48,7 @@ var ec2Cmd = &cobra.Command{
 			log.Fatalf("Failed to check snapshot encryption: %v", err)
 		}
 		for _, v := range encryptedSnapshots {
-			rule := rules.Rules["ec2-snapshot-encryption"]
+			rule := rules.Get("ec2-snapshot-encryption")
 			tbl.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), v, rule.Issue})
 		}
 

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"awsselfrev/internal/aws/api"
 	s3Internal "awsselfrev/internal/aws/service/s3"
 	"awsselfrev/internal/color"
 	"awsselfrev/internal/config"
@@ -24,13 +25,6 @@ and lifecycle rules for buckets with 'log' in their names. The results are displ
 		tbl := table.SetTable()
 		client := s3.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor() // Colors are now handling in table rendering or we just pass strings.
-		// Wait, existing code passed levelWarning/Alert strings to the function.
-		// My new Rule struct has "Level" string (e.g. "Alert").
-		// The table renderer currently expects the level string itself?
-		// "table.Append([]string{"S3", levelAlert, bucket, ...})"
-		// levelAlert was `fgRed("Alert")`.
-		// My YAML has "Alert".
-		// I need to map "Alert" -> colored string.
 
 		buckets := s3Internal.ListBuckets(client)
 		for _, bucket := range buckets {
@@ -41,17 +35,17 @@ and lifecycle rules for buckets with 'log' in their names. The results are displ
 	},
 }
 
-func checkBucketConfigurations(client *s3.Client, bucket string, table *tablewriter.Table, rules config.RulesConfig) {
+func checkBucketConfigurations(client api.S3Client, bucket string, table *tablewriter.Table, rules config.RulesConfig) {
 	if !s3Internal.IsBucketEncrypted(client, bucket) {
-		rule := rules.Rules["s3-encryption"]
+		rule := rules.Get("s3-encryption")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
 	}
 	if !s3Internal.IsBlockPublicAccessEnabled(client, bucket) {
-		rule := rules.Rules["s3-public-access"]
+		rule := rules.Get("s3-public-access")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
 	}
 	if !s3Internal.IsLifeCycleRuleConfiguredLogBucket(client, bucket) {
-		rule := rules.Rules["s3-lifecycle"]
+		rule := rules.Get("s3-lifecycle")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
 	}
 }

@@ -49,14 +49,14 @@ func checkRDSConfigurations(client *rds.Client, table *tablewriter.Table, rules 
 
 func checkStorageEncryption(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
 	if cluster.StorageEncrypted != nil && !*cluster.StorageEncrypted {
-		rule := rules.Rules["rds-storage-encryption"]
+		rule := rules.Get("rds-storage-encryption")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, rule.Issue})
 	}
 }
 
 func checkDeletionProtection(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
 	if cluster.DeletionProtection != nil && !*cluster.DeletionProtection {
-		rule := rules.Rules["rds-deletion-protection"]
+		rule := rules.Get("rds-deletion-protection")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, rule.Issue})
 	}
 }
@@ -64,7 +64,7 @@ func checkDeletionProtection(cluster types.DBCluster, table *tablewriter.Table, 
 // TODO:ログ種別ごとに確認できるようにする
 func checkLogExports(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
 	if len(cluster.EnabledCloudwatchLogsExports) == 0 {
-		rule := rules.Rules["rds-log-export"]
+		rule := rules.Get("rds-log-export")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, rule.Issue})
 	}
 }
@@ -86,7 +86,7 @@ func checkDBInstances(client *rds.Client, members []types.DBClusterMember, table
 
 func checkAutoMinorVersionUpgrade(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
 	if instance.AutoMinorVersionUpgrade != nil && *instance.AutoMinorVersionUpgrade {
-		rule := rules.Rules["rds-auto-minor-version-upgrade"]
+		rule := rules.Get("rds-auto-minor-version-upgrade")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, rule.Issue})
 	}
 }

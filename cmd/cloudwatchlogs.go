@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"awsselfrev/internal/aws/api"
 	"awsselfrev/internal/color"
 	"awsselfrev/internal/config"
 	"awsselfrev/internal/table"
@@ -31,14 +32,14 @@ var cloudwatchlogsCmd = &cobra.Command{
 	},
 }
 
-func checkLogGroupsRetention(client *cloudwatchlogs.Client, table *tablewriter.Table, rules config.RulesConfig) {
+func checkLogGroupsRetention(client api.CloudWatchLogsClient, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeLogGroups(context.TODO(), &cloudwatchlogs.DescribeLogGroupsInput{})
 	if err != nil {
 		log.Fatalf("Failed to describe log groups: %v", err)
 	}
 	for _, logGroup := range resp.LogGroups {
 		if logGroup.RetentionInDays == nil {
-			rule := rules.Rules["cloudwatch-retention"]
+			rule := rules.Get("cloudwatch-retention")
 			table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, rule.Issue})
 		}
 	}
