@@ -66,7 +66,10 @@ func (m MockHTTPStatusError) HTTPStatusCode() int { return m.StatusCode }
 func TestCheckBucketConfigurations(t *testing.T) {
 	client := new(MockS3Client)
 	// テスト用のデータを設定 (Use log bucket to trigger all checks)
-	buckets := []types.Bucket{{Name: aws.String("test-log-bucket")}}
+	buckets := []types.Bucket{
+		{Name: aws.String("test-log-bucket")},
+		{Name: aws.String("test-bucket")},
+	}
 
 	// 404 Error for "Not Found" simulation
 	err404 := MockHTTPStatusError{StatusCode: 404}
@@ -82,16 +85,21 @@ func TestCheckBucketConfigurations(t *testing.T) {
 	// ルールのセットアップ
 	rules := config.RulesConfig{
 		Rules: map[string]config.Rule{
-			"s3-encryption":    {Service: "S3", Level: "Alert", Issue: "Bucket encryption is not set"},
-			"s3-public-access": {Service: "S3", Level: "Alert", Issue: "Block public access is all off"},
-			"s3-lifecycle":     {Service: "S3", Level: "Warning", Issue: "Lifecycle policy is not set"},
-			"s3-object-lock":   {Service: "S3", Level: "Warning", Issue: "Object Lock is not enabled"},
+			"s3-encryption":         {Service: "S3", Level: "Alert", Issue: "Bucket encryption is not set"},
+			"s3-public-access":      {Service: "S3", Level: "Alert", Issue: "Block public access is all off"},
+			"s3-lifecycle":          {Service: "S3", Level: "Warning", Issue: "Lifecycle policy is not set"},
+			"s3-object-lock":        {Service: "S3", Level: "Warning", Issue: "Object Lock is not enabled"},
+			"s3-sse-kms-encryption": {Service: "S3", Level: "Warning", Issue: "SSE-KMS encryption is not set"},
 		},
 	}
 
 	// テスト対象の関数を呼び出し
 	checkBucketConfigurations(client, "test-log-bucket", tbl, rules)
+	checkBucketConfigurations(client, "test-bucket", tbl, rules)
 
 	// テーブルの内容を検証
-	assert.Equal(t, 4, tbl.NumLines()) // 4 checks fail (encryption, public access, lifecycle, object lock)
+	// test-log-bucket: Encryption(F), Public(F), Lifecycle(F), ObjectLock(F), SSE-KMS(Skipped) -> 4 failures
+	// test-bucket: Encryption(F), Public(F), Lifecycle(Skipped), ObjectLock(Skipped), SSE-KMS(Checked->F) -> 3 failures
+	// Total rows = 4 + 3 = 7
+	assert.Equal(t, 7, tbl.NumLines())
 }

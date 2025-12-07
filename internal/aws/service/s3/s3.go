@@ -61,6 +61,24 @@ func IsObjectLockEnabled(client api.S3Client, bucket string) bool {
 	return true
 }
 
+func IsBucketEncryptedWithKMS(client api.S3Client, bucket string) bool {
+	if !strings.Contains(bucket, "log") {
+		resp, err := client.GetBucketEncryption(context.TODO(), &s3.GetBucketEncryptionInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return handleS3Error(err)
+		}
+		for _, rule := range resp.ServerSideEncryptionConfiguration.Rules {
+			if rule.ApplyServerSideEncryptionByDefault != nil && rule.ApplyServerSideEncryptionByDefault.SSEAlgorithm == types.ServerSideEncryptionAwsKms {
+				return true
+			}
+		}
+		return false
+	}
+	return true
+}
+
 type HTTPStatusError interface {
 	HTTPStatusCode() int
 }

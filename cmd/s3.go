@@ -52,6 +52,10 @@ func checkBucketConfigurations(client api.S3Client, bucket string, table *tablew
 		rule := rules.Get("s3-object-lock")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
 	}
+	if !s3Internal.IsBucketEncryptedWithKMS(client, bucket) {
+		rule := rules.Get("s3-sse-kms-encryption")
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
+	}
 }
 
 func init() {

@@ -15,6 +15,10 @@ rules:
     service: S3
     level: Warning
     issue: Object Lock is not enabled
+  s3-sse-kms-encryption:
+    service: S3
+    level: Warning
+    issue: SSE-KMS encryption is not set
   ec2-ebs-default-encryption:
     service: EC2
     level: Warning
