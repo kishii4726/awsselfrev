@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 func ListBuckets(client api.S3Client) []string {
@@ -43,6 +44,19 @@ func IsLifeCycleRuleConfiguredLogBucket(client api.S3Client, bucket string) bool
 			Bucket: aws.String(bucket),
 		})
 		return handleS3Error(err)
+	}
+	return true
+}
+
+func IsObjectLockEnabled(client api.S3Client, bucket string) bool {
+	if strings.Contains(bucket, "log") {
+		resp, err := client.GetObjectLockConfiguration(context.TODO(), &s3.GetObjectLockConfigurationInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return handleS3Error(err)
+		}
+		return resp.ObjectLockConfiguration != nil && resp.ObjectLockConfiguration.ObjectLockEnabled == types.ObjectLockEnabledEnabled
 	}
 	return true
 }

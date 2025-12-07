@@ -11,6 +11,10 @@ rules:
     service: S3
     level: Warning
     issue: Lifecycle policy is not set
+  s3-object-lock:
+    service: S3
+    level: Warning
+    issue: Object Lock is not enabled
   ec2-ebs-default-encryption:
     service: EC2
     level: Warning

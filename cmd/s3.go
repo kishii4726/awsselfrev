@@ -48,6 +48,10 @@ func checkBucketConfigurations(client api.S3Client, bucket string, table *tablew
 		rule := rules.Get("s3-lifecycle")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
 	}
+	if !s3Internal.IsObjectLockEnabled(client, bucket) {
+		rule := rules.Get("s3-object-lock")
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
+	}
 }
 
 func init() {

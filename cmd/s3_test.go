@@ -48,6 +48,14 @@ func (m *MockS3Client) GetBucketLifecycleConfiguration(ctx context.Context, para
 	return args.Get(0).(*s3.GetBucketLifecycleConfigurationOutput), args.Error(1)
 }
 
+func (m *MockS3Client) GetObjectLockConfiguration(ctx context.Context, params *s3.GetObjectLockConfigurationInput, optFns ...func(*s3.Options)) (*s3.GetObjectLockConfigurationOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*s3.GetObjectLockConfigurationOutput), args.Error(1)
+}
+
 type MockHTTPStatusError struct {
 	StatusCode int
 }
@@ -57,8 +65,8 @@ func (m MockHTTPStatusError) HTTPStatusCode() int { return m.StatusCode }
 
 func TestCheckBucketConfigurations(t *testing.T) {
 	client := new(MockS3Client)
-	// テスト用のデータを設定
-	buckets := []types.Bucket{{Name: aws.String("test-bucket")}}
+	// テスト用のデータを設定 (Use log bucket to trigger all checks)
+	buckets := []types.Bucket{{Name: aws.String("test-log-bucket")}}
 
 	// 404 Error for "Not Found" simulation
 	err404 := MockHTTPStatusError{StatusCode: 404}
@@ -67,6 +75,7 @@ func TestCheckBucketConfigurations(t *testing.T) {
 	client.On("GetBucketEncryption", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetBucketEncryptionOutput)(nil), err404)
 	client.On("GetPublicAccessBlock", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetPublicAccessBlockOutput)(nil), err404)
 	client.On("GetBucketLifecycleConfiguration", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetBucketLifecycleConfigurationOutput)(nil), err404)
+	client.On("GetObjectLockConfiguration", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetObjectLockConfigurationOutput)(nil), err404)
 
 	// テーブルのセットアップ
 	tbl := table.SetTable()
@@ -76,12 +85,13 @@ func TestCheckBucketConfigurations(t *testing.T) {
 			"s3-encryption":    {Service: "S3", Level: "Alert", Issue: "Bucket encryption is not set"},
 			"s3-public-access": {Service: "S3", Level: "Alert", Issue: "Block public access is all off"},
 			"s3-lifecycle":     {Service: "S3", Level: "Warning", Issue: "Lifecycle policy is not set"},
+			"s3-object-lock":   {Service: "S3", Level: "Warning", Issue: "Object Lock is not enabled"},
 		},
 	}
 
 	// テスト対象の関数を呼び出し
-	checkBucketConfigurations(client, "test-bucket", tbl, rules)
+	checkBucketConfigurations(client, "test-log-bucket", tbl, rules)
 
 	// テーブルの内容を検証
-	assert.Equal(t, 2, tbl.NumLines()) // 2 checks fail (encryption, public access). Lifecycle check skipped for non-log bucket.
+	assert.Equal(t, 4, tbl.NumLines()) // 4 checks fail (encryption, public access, lifecycle, object lock)
 }
