@@ -71,3 +71,7 @@ rules:
     service: ECR
     level: Info
     issue: Lifecycle policy is not set
+  vpc-flow-logs-custom-format:
+    service: VPC
+    level: Info
+    issue: Custom flow log format is not set or missing required fields

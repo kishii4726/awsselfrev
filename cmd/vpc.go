@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"log"
+	"strings"
 
 	"awsselfrev/internal/aws/api"
 	"awsselfrev/internal/color"
@@ -60,6 +61,13 @@ as well as the status of DNS hostnames and DNS support. It also checks if VPC Fl
 				rule := rules.Get("vpc-flow-logs")
 				message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
 				data = append(data, message)
+			} else {
+				// Only check custom format if flow logs are enabled
+				if !hasCustomFlowLogFormat(client, vpcID) {
+					rule := rules.Get("vpc-flow-logs-custom-format")
+					message := []string{rule.Service, color.ColorizeLevel(rule.Level), vpcID, rule.Issue}
+					data = append(data, message)
+				}
 			}
 		}
 
@@ -113,6 +121,35 @@ func isFlowLogsEnabled(client api.EC2Client, vpcID string) bool {
 	}
 
 	return len(resp.FlowLogs) > 0
+}
+
+func hasCustomFlowLogFormat(client api.EC2Client, vpcID string) bool {
+	describeFlowLogsInput := &ec2.DescribeFlowLogsInput{
+		Filter: []types.Filter{
+			{
+				Name:   aws.String("resource-id"),
+				Values: []string{vpcID},
+			},
+		},
+	}
+
+	resp, err := client.DescribeFlowLogs(context.TODO(), describeFlowLogsInput)
+	if err != nil {
+		log.Fatalf("Failed to describe flow logs for VPC %s: %v", vpcID, err)
+	}
+
+	for _, fl := range resp.FlowLogs {
+		if fl.LogFormat != nil {
+			fmt := *fl.LogFormat
+			if strings.Contains(fmt, "tcp-flags") &&
+				strings.Contains(fmt, "pkt-srcaddr") &&
+				strings.Contains(fmt, "pkt-dstaddr") &&
+				strings.Contains(fmt, "flow-direction") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func init() {
