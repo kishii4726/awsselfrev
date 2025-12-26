@@ -131,3 +131,7 @@ rules:
     service: ECS
     level: Warning
     issue: Propagate tags is not set
+  telemetry-resource-tags-enabled:
+    service: ObservabilityAdmin
+    level: Warning
+    issue: Telemetry resource tags are not enabled
