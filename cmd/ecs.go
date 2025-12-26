@@ -98,7 +98,15 @@ func checkServices(client api.ECSClient, clusterArn string, clusterName string, 
 		for _, service := range descResp.Services {
 			checkCircuitBreaker(service, table, rules)
 			checkCpuArchitecture(client, service, table, rules)
+			checkPropagateTags(service, table, rules)
 		}
+	}
+}
+
+func checkPropagateTags(service types.Service, table *tablewriter.Table, rules config.RulesConfig) {
+	if service.PropagateTags == types.PropagateTagsNone {
+		rule := rules.Get("ecs-propagate-tags")
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
 	}
 }
 

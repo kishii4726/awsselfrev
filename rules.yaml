@@ -127,3 +127,7 @@ rules:
     service: ECS
     level: Warning
     issue: ARM64 architecture is not used
+  ecs-propagate-tags:
+    service: ECS
+    level: Warning
+    issue: Propagate tags is not set
