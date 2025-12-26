@@ -79,6 +79,19 @@ func IsBucketEncryptedWithKMS(client api.S3Client, bucket string) bool {
 	return true
 }
 
+func IsServerAccessLoggingEnabled(client api.S3Client, bucket string) bool {
+	if !strings.Contains(bucket, "log") {
+		resp, err := client.GetBucketLogging(context.TODO(), &s3.GetBucketLoggingInput{
+			Bucket: aws.String(bucket),
+		})
+		if err != nil {
+			return handleS3Error(err)
+		}
+		return resp.LoggingEnabled != nil
+	}
+	return true
+}
+
 type HTTPStatusError interface {
 	HTTPStatusCode() int
 }

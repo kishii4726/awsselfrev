@@ -19,6 +19,10 @@ rules:
     service: S3
     level: Warning
     issue: SSE-KMS encryption is not set
+  s3-server-access-logging:
+    service: S3
+    level: Warning
+    issue: Server access logging is not enabled
   ec2-ebs-default-encryption:
     service: EC2
     level: Warning
@@ -47,6 +51,14 @@ rules:
     service: RDS
     level: Warning
     issue: Auto minor version upgrade is enabled
+  rds-backup-enabled:
+    service: RDS
+    level: Warning
+    issue: Backup is not enabled
+  rds-default-parameter-group:
+    service: RDS
+    level: Warning
+    issue: Default parameter group is used
   vpc-name-tag:
     service: VPC
     level: Info
@@ -67,6 +79,10 @@ rules:
     service: CloudWatchLogs
     level: Alert
     issue: Retention is set to never expire
+  cloudwatch-log-group-encryption:
+    service: CloudWatchLogs
+    level: Warning
+    issue: Log group is not encrypted with KMS
   ecr-tag-immutability:
     service: ECR
     level: Warning
@@ -83,3 +99,31 @@ rules:
     service: VPC
     level: Info
     issue: Custom flow log format is not set or missing required fields
+  route53-query-logging:
+    service: Route53
+    level: Warning
+    issue: Query logging is not enabled
+  alb-access-logging:
+    service: ELB
+    level: Warning
+    issue: Access logs are not enabled
+  alb-connection-logging:
+    service: ELB
+    level: Warning
+    issue: Connection logs are not enabled
+  alb-deletion-protection:
+    service: ELB
+    level: Warning
+    issue: Deletion protection is not enabled
+  ecs-container-insights:
+    service: ECS
+    level: Warning
+    issue: Container Insights is not enabled
+  ecs-service-circuit-breaker:
+    service: ECS
+    level: Warning
+    issue: Circuit breaker is not enabled
+  ecs-cpu-architecture:
+    service: ECS
+    level: Warning
+    issue: ARM64 architecture is not used

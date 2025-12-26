@@ -56,6 +56,14 @@ func (m *MockS3Client) GetObjectLockConfiguration(ctx context.Context, params *s
 	return args.Get(0).(*s3.GetObjectLockConfigurationOutput), args.Error(1)
 }
 
+func (m *MockS3Client) GetBucketLogging(ctx context.Context, params *s3.GetBucketLoggingInput, optFns ...func(*s3.Options)) (*s3.GetBucketLoggingOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*s3.GetBucketLoggingOutput), args.Error(1)
+}
+
 type MockHTTPStatusError struct {
 	StatusCode int
 }
@@ -79,17 +87,19 @@ func TestCheckBucketConfigurations(t *testing.T) {
 	client.On("GetPublicAccessBlock", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetPublicAccessBlockOutput)(nil), err404)
 	client.On("GetBucketLifecycleConfiguration", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetBucketLifecycleConfigurationOutput)(nil), err404)
 	client.On("GetObjectLockConfiguration", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetObjectLockConfigurationOutput)(nil), err404)
+	client.On("GetBucketLogging", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetBucketLoggingOutput)(nil), err404)
 
 	// テーブルのセットアップ
 	tbl := table.SetTable()
 	// ルールのセットアップ
 	rules := config.RulesConfig{
 		Rules: map[string]config.Rule{
-			"s3-encryption":         {Service: "S3", Level: "Alert", Issue: "Bucket encryption is not set"},
-			"s3-public-access":      {Service: "S3", Level: "Alert", Issue: "Block public access is all off"},
-			"s3-lifecycle":          {Service: "S3", Level: "Warning", Issue: "Lifecycle policy is not set"},
-			"s3-object-lock":        {Service: "S3", Level: "Warning", Issue: "Object Lock is not enabled"},
-			"s3-sse-kms-encryption": {Service: "S3", Level: "Warning", Issue: "SSE-KMS encryption is not set"},
+			"s3-encryption":            {Service: "S3", Level: "Alert", Issue: "Bucket encryption is not set"},
+			"s3-public-access":         {Service: "S3", Level: "Alert", Issue: "Block public access is all off"},
+			"s3-lifecycle":             {Service: "S3", Level: "Warning", Issue: "Lifecycle policy is not set"},
+			"s3-object-lock":           {Service: "S3", Level: "Warning", Issue: "Object Lock is not enabled"},
+			"s3-sse-kms-encryption":    {Service: "S3", Level: "Warning", Issue: "SSE-KMS encryption is not set"},
+			"s3-server-access-logging": {Service: "S3", Level: "Warning", Issue: "Server access logging is not enabled"},
 		},
 	}
 
@@ -98,8 +108,8 @@ func TestCheckBucketConfigurations(t *testing.T) {
 	checkBucketConfigurations(client, "test-bucket", tbl, rules)
 
 	// テーブルの内容を検証
-	// test-log-bucket: Encryption(F), Public(F), Lifecycle(F), ObjectLock(F), SSE-KMS(Skipped) -> 4 failures
-	// test-bucket: Encryption(F), Public(F), Lifecycle(Skipped), ObjectLock(Skipped), SSE-KMS(Checked->F) -> 3 failures
-	// Total rows = 4 + 3 = 7
-	assert.Equal(t, 7, tbl.NumLines())
+	// test-log-bucket: Encryption(F), Public(F), Lifecycle(F), ObjectLock(F), SSE-KMS(Skipped), AccessLogs(Skipped/Pass) -> 4 failures
+	// test-bucket: Encryption(F), Public(F), Lifecycle(Skipped), ObjectLock(Skipped), SSE-KMS(Checked->F), AccessLogs(Checked->F) -> 4 failures
+	// Total rows = 4 + 4 = 8
+	assert.Equal(t, 8, tbl.NumLines())
 }
