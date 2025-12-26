@@ -21,6 +21,6 @@ func Render(serviceName string, table *tablewriter.Table) {
 	if table.NumLines() > 0 {
 		table.Render()
 	} else {
-		log.Println(serviceName + ": No data to render.")
+		log.Println(serviceName + ": No issues found.")
 	}
 }
