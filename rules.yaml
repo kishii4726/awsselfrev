@@ -59,6 +59,10 @@ rules:
     service: RDS
     level: Warning
     issue: Default parameter group is used
+  rds-public-access:
+    service: RDS
+    level: Alert
+    issue: RDS instance is publicly accessible
   vpc-name-tag:
     service: VPC
     level: Info
