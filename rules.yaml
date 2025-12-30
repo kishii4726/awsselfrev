@@ -63,6 +63,22 @@ rules:
     service: RDS
     level: Alert
     issue: RDS instance is publicly accessible
+  rds-general-log:
+    service: RDS
+    level: Warning
+    issue: General log is not enabled
+  rds-audit-log:
+    service: RDS
+    level: Warning
+    issue: Audit log is not enabled
+  rds-error-log:
+    service: RDS
+    level: Warning
+    issue: Error log is not enabled
+  rds-slow-query-log:
+    service: RDS
+    level: Warning
+    issue: Slow query log is not enabled
   vpc-name-tag:
     service: VPC
     level: Info
