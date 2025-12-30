@@ -79,6 +79,10 @@ rules:
     service: RDS
     level: Warning
     issue: Slow query log is not enabled
+  rds-performance-insights:
+    service: RDS
+    level: Warning
+    issue: Performance Insights is not enabled
   vpc-name-tag:
     service: VPC
     level: Info
@@ -151,6 +155,10 @@ rules:
     service: ECS
     level: Warning
     issue: Propagate tags is not set
+  cloudfront-logging-enabled:
+    service: CloudFront
+    level: Warning
+    issue: Logging is not enabled
   telemetry-resource-tags-enabled:
     service: ObservabilityAdmin
     level: Warning

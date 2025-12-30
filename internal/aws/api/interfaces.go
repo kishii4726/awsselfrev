@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -68,4 +69,9 @@ type ECSClient interface {
 
 type ObservabilityAdminClient interface {
 	GetTelemetryEnrichmentStatus(ctx context.Context, params *observabilityadmin.GetTelemetryEnrichmentStatusInput, optFns ...func(*observabilityadmin.Options)) (*observabilityadmin.GetTelemetryEnrichmentStatusOutput, error)
+}
+
+type CloudFrontClient interface {
+	ListDistributions(ctx context.Context, params *cloudfront.ListDistributionsInput, optFns ...func(*cloudfront.Options)) (*cloudfront.ListDistributionsOutput, error)
+	GetDistributionConfig(ctx context.Context, params *cloudfront.GetDistributionConfigInput, optFns ...func(*cloudfront.Options)) (*cloudfront.GetDistributionConfigOutput, error)
 }

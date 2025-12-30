@@ -84,6 +84,7 @@ func checkRDSConfigurations(client api.RDSClient, table *tablewriter.Table, rule
 		checkAutoMinorVersionUpgrade(instance, table, rules)
 		checkInstanceDefaultParameterGroup(instance, table, rules)
 		checkPublicAccessibility(instance, table, rules)
+		checkPerformanceInsights(instance, table, rules)
 		checkInstanceLogConfigurations(client, instance, table, rules)
 
 		processedInstances[*instance.DBInstanceIdentifier] = true
@@ -142,6 +143,13 @@ func checkInstanceDefaultParameterGroup(instance types.DBInstance, table *tablew
 func checkPublicAccessibility(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
 	if instance.PubliclyAccessible != nil && *instance.PubliclyAccessible {
 		rule := rules.Get("rds-public-access")
+		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, rule.Issue})
+	}
+}
+
+func checkPerformanceInsights(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
+	if instance.PerformanceInsightsEnabled != nil && !*instance.PerformanceInsightsEnabled {
+		rule := rules.Get("rds-performance-insights")
 		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, rule.Issue})
 	}
 }
