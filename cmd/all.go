@@ -17,6 +17,8 @@ var allCmd = &cobra.Command{
 		rdsCmd.Run(rdsCmd, args)
 		ecrCmd.Run(ecrCmd, args)
 		cloudwatchlogsCmd.Run(cloudwatchlogsCmd, args)
+		cloudfrontCmd.Run(cloudfrontCmd, args)
+		observabilityCmd.Run(observabilityCmd, args)
 	},
 }
 
