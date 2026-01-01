@@ -163,3 +163,7 @@ rules:
     service: ObservabilityAdmin
     level: Warning
     issue: Telemetry resource tags are not enabled
+  rds-maintenance-window:
+    service: RDS
+    level: Warning
+    issue: Maintenance window is not set to 22:00-05:00 JST

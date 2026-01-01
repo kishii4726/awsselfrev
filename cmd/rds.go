@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"log"
+	"strconv"
 	"strings"
 
 	"awsselfrev/internal/aws/api"
@@ -55,6 +56,7 @@ func checkRDSConfigurations(client api.RDSClient, table *tablewriter.Table, rule
 		checkClusterBackupEnabled(cluster, table, rules)
 		checkClusterDefaultParameterGroup(cluster, table, rules)
 		checkClusterLogConfigurations(client, cluster, table, rules)
+		checkClusterMaintenanceWindow(cluster, table, rules)
 		checkDBInstances(client, cluster.DBClusterMembers, table, rules)
 	}
 
@@ -86,6 +88,7 @@ func checkRDSConfigurations(client api.RDSClient, table *tablewriter.Table, rule
 		checkPublicAccessibility(instance, table, rules)
 		checkPerformanceInsights(instance, table, rules)
 		checkInstanceLogConfigurations(client, instance, table, rules)
+		checkInstanceMaintenanceWindow(instance, table, rules)
 
 		processedInstances[*instance.DBInstanceIdentifier] = true
 	}
@@ -177,6 +180,63 @@ func checkInstanceLogConfigurations(client api.RDSClient, instance types.DBInsta
 	}
 
 	checkLogs(client, pgName, exports, *instance.DBInstanceIdentifier, table, rules, false)
+}
+
+func checkClusterMaintenanceWindow(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
+	if cluster.PreferredMaintenanceWindow != nil {
+		if !isWindowValid(*cluster.PreferredMaintenanceWindow) {
+			rule := rules.Get("rds-maintenance-window")
+			table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, rule.Issue})
+		}
+	}
+}
+
+func checkInstanceMaintenanceWindow(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
+	if instance.PreferredMaintenanceWindow != nil {
+		if !isWindowValid(*instance.PreferredMaintenanceWindow) {
+			rule := rules.Get("rds-maintenance-window")
+			table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, rule.Issue})
+		}
+	}
+}
+
+func isWindowValid(window string) bool {
+	// Window format: ddd:hh:mm-ddd:hh:mm
+	// UTC check: 13:00 - 20:00
+	parts := strings.Split(window, "-")
+	if len(parts) != 2 {
+		return false
+	}
+
+	start := parts[0]
+	end := parts[1]
+
+	startParams := strings.Split(start, ":")
+	endParams := strings.Split(end, ":")
+
+	if len(startParams) != 3 || len(endParams) != 3 {
+		return false
+	}
+
+	startHour, _ := strconv.Atoi(startParams[1])
+	startMin, _ := strconv.Atoi(startParams[2])
+	endHour, _ := strconv.Atoi(endParams[1])
+	endMin, _ := strconv.Atoi(endParams[2])
+
+	startTime := startHour*60 + startMin
+	endTime := endHour*60 + endMin
+
+	// 13:00 UTC = 780 min
+	// 20:00 UTC = 1200 min
+	safeStart := 13 * 60
+	safeEnd := 20 * 60
+
+	// Check if configured window is completely within safe window
+	if startTime >= safeStart && endTime <= safeEnd && endTime > startTime {
+		return true
+	}
+
+	return false
 }
 
 func checkLogs(client api.RDSClient, pgName string, exports []string, identifier string, table *tablewriter.Table, rules config.RulesConfig, isCluster bool) {
