@@ -62,7 +62,7 @@ func checkQueryLogging(client api.Route53Client, table *tablewriter.Table, rules
 
 		rule := rules.Get("route53-query-logging")
 		if len(configs.QueryLoggingConfigs) == 0 {
-			table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *zone.Name, rule.Issue})
+			table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *zone.Name, rule.Issue})
 		} else {
 			table.Append([]string{rule.Service, "Pass", "-", *zone.Name, rule.Issue})
 		}

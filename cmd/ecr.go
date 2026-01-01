@@ -60,7 +60,7 @@ func describeRepositories(client api.ECRClient, table *tablewriter.Table, rules 
 func checkTagImmutability(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("ecr-tag-immutability")
 	if repo.ImageTagMutability == types.ImageTagMutabilityMutable {
-		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
+		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
 	} else {
 		table.Append([]string{rule.Service, "Pass", "-", *repo.RepositoryName, rule.Issue})
 	}
@@ -69,7 +69,7 @@ func checkTagImmutability(repo types.Repository, table *tablewriter.Table, rules
 func checkImageScanningConfiguration(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("ecr-image-scanning")
 	if !repo.ImageScanningConfiguration.ScanOnPush {
-		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
+		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
 	} else {
 		table.Append([]string{rule.Service, "Pass", "-", *repo.RepositoryName, rule.Issue})
 	}
@@ -83,7 +83,7 @@ func checkLifecyclePolicy(client api.ECRClient, repoName string, table *tablewri
 	if err != nil {
 		var re *awshttp.ResponseError
 		if errors.As(err, &re) && re.HTTPStatusCode() == 400 {
-			table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), repoName, rule.Issue})
+			table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), repoName, rule.Issue})
 		} else {
 			log.Fatalf("Failed to describe lifecycle policy for repository %s: %v", repoName, err)
 		}

@@ -155,3 +155,15 @@ rules:
     service: VPC
     level: Info
     issue: Custom flow log format is not set or missing required fields
+  ec2-ebs-default-encryption:
+    service: EC2
+    level: Warning
+    issue: Default encryption for EBS is not set
+  ec2-volume-encryption:
+    service: EC2
+    level: Alert
+    issue: EBS encryption is not set
+  ec2-snapshot-encryption:
+    service: EC2
+    level: Alert
+    issue: EBS encryption is not set

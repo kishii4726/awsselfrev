@@ -41,7 +41,7 @@ as well as the status of DNS hostnames and DNS support. It also checks if VPC Fl
 
 			ruleName := rules.Get("vpc-name-tag")
 			if !hasNameTag(vpc.Tags) {
-				message := []string{ruleName.Service, "NG", color.ColorizeLevel(ruleName.Level), vpcID, ruleName.Issue}
+				message := []string{ruleName.Service, "Fail", color.ColorizeLevel(ruleName.Level), vpcID, ruleName.Issue}
 				data = append(data, message)
 			} else {
 				message := []string{ruleName.Service, "Pass", "-", vpcID, ruleName.Issue}
@@ -50,7 +50,7 @@ as well as the status of DNS hostnames and DNS support. It also checks if VPC Fl
 
 			ruleDnsHost := rules.Get("vpc-dns-hostname")
 			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsHostnames) {
-				message := []string{ruleDnsHost.Service, "NG", color.ColorizeLevel(ruleDnsHost.Level), vpcID, ruleDnsHost.Issue}
+				message := []string{ruleDnsHost.Service, "Fail", color.ColorizeLevel(ruleDnsHost.Level), vpcID, ruleDnsHost.Issue}
 				data = append(data, message)
 			} else {
 				message := []string{ruleDnsHost.Service, "Pass", "-", vpcID, ruleDnsHost.Issue}
@@ -59,7 +59,7 @@ as well as the status of DNS hostnames and DNS support. It also checks if VPC Fl
 
 			ruleDnsSup := rules.Get("vpc-dns-support")
 			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsSupport) {
-				message := []string{ruleDnsSup.Service, "NG", color.ColorizeLevel(ruleDnsSup.Level), vpcID, ruleDnsSup.Issue}
+				message := []string{ruleDnsSup.Service, "Fail", color.ColorizeLevel(ruleDnsSup.Level), vpcID, ruleDnsSup.Issue}
 				data = append(data, message)
 			} else {
 				message := []string{ruleDnsSup.Service, "Pass", "-", vpcID, ruleDnsSup.Issue}
@@ -68,13 +68,13 @@ as well as the status of DNS hostnames and DNS support. It also checks if VPC Fl
 
 			ruleFlow := rules.Get("vpc-flow-logs")
 			if !isFlowLogsEnabled(client, vpcID) {
-				message := []string{ruleFlow.Service, "NG", color.ColorizeLevel(ruleFlow.Level), vpcID, ruleFlow.Issue}
+				message := []string{ruleFlow.Service, "Fail", color.ColorizeLevel(ruleFlow.Level), vpcID, ruleFlow.Issue}
 				data = append(data, message)
 			} else {
 				// Flow logs enabled, check custom format
 				ruleFormat := rules.Get("vpc-flow-logs-custom-format")
 				if !hasCustomFlowLogFormat(client, vpcID) {
-					message := []string{ruleFormat.Service, "NG", color.ColorizeLevel(ruleFormat.Level), vpcID, ruleFormat.Issue}
+					message := []string{ruleFormat.Service, "Fail", color.ColorizeLevel(ruleFormat.Level), vpcID, ruleFormat.Issue}
 					data = append(data, message)
 				} else {
 					message := []string{ruleFormat.Service, "Pass", "-", vpcID, ruleFormat.Issue}

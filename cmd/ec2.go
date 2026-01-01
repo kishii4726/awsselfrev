@@ -34,7 +34,7 @@ var ec2Cmd = &cobra.Command{
 		}
 		ruleEbs := rules.Get("ec2-ebs-default-encryption")
 		if !ebsEncryptionEnabled {
-			tbl.Append([]string{ruleEbs.Service, "NG", color.ColorizeLevel(ruleEbs.Level), "-", ruleEbs.Issue})
+			tbl.Append([]string{ruleEbs.Service, "Fail", color.ColorizeLevel(ruleEbs.Level), "-", ruleEbs.Issue})
 		} else {
 			tbl.Append([]string{ruleEbs.Service, "Pass", "-", "-", ruleEbs.Issue})
 		}
@@ -50,7 +50,7 @@ var ec2Cmd = &cobra.Command{
 		} else {
 			for _, v := range volumesResp.Volumes {
 				if !*v.Encrypted {
-					tbl.Append([]string{ruleVol.Service, "NG", color.ColorizeLevel(ruleVol.Level), *v.VolumeId, ruleVol.Issue})
+					tbl.Append([]string{ruleVol.Service, "Fail", color.ColorizeLevel(ruleVol.Level), *v.VolumeId, ruleVol.Issue})
 				} else {
 					tbl.Append([]string{ruleVol.Service, "Pass", "-", *v.VolumeId, ruleVol.Issue})
 				}
@@ -70,7 +70,7 @@ var ec2Cmd = &cobra.Command{
 		} else {
 			for _, s := range snapshotsResp.Snapshots {
 				if !*s.Encrypted {
-					tbl.Append([]string{ruleSnap.Service, "NG", color.ColorizeLevel(ruleSnap.Level), *s.SnapshotId, ruleSnap.Issue})
+					tbl.Append([]string{ruleSnap.Service, "Fail", color.ColorizeLevel(ruleSnap.Level), *s.SnapshotId, ruleSnap.Issue})
 				} else {
 					tbl.Append([]string{ruleSnap.Service, "Pass", "-", *s.SnapshotId, ruleSnap.Issue})
 				}
