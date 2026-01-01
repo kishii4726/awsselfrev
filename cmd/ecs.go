@@ -72,9 +72,9 @@ func checkContainerInsights(cluster types.Cluster, table *tablewriter.Table, rul
 
 	rule := rules.Get("ecs-container-insights")
 	if !enabled {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.ClusterName, rule.Issue})
+		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.ClusterName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *cluster.ClusterName, rule.Issue})
+		table.Append([]string{rule.Service, "Pass", "-", *cluster.ClusterName, "Enabled", rule.Issue})
 	}
 }
 
@@ -108,9 +108,9 @@ func checkServices(client api.ECSClient, clusterArn string, clusterName string, 
 func checkPropagateTags(service types.Service, table *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("ecs-propagate-tags")
 	if service.PropagateTags == types.PropagateTagsNone {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
+		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, string(service.PropagateTags), rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, rule.Issue})
+		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, string(service.PropagateTags), rule.Issue})
 	}
 }
 
@@ -125,9 +125,9 @@ func checkCircuitBreaker(service types.Service, table *tablewriter.Table, rules 
 
 	rule := rules.Get("ecs-service-circuit-breaker")
 	if !enabled {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
+		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, rule.Issue})
+		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, "Enabled", rule.Issue})
 	}
 }
 
@@ -152,10 +152,15 @@ func checkCpuArchitecture(client api.ECSClient, service types.Service, table *ta
 		isArm64 = true
 	}
 
+	arch := "Unknown"
+	if tdResp.TaskDefinition.RuntimePlatform != nil {
+		arch = string(tdResp.TaskDefinition.RuntimePlatform.CpuArchitecture)
+	}
+
 	rule := rules.Get("ecs-cpu-architecture")
 	if !isArm64 {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
+		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, arch, rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, rule.Issue})
+		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, arch, rule.Issue})
 	}
 }

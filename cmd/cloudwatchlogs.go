@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"awsselfrev/internal/aws/api"
@@ -47,18 +48,19 @@ func checkLogGroupsRetention(client api.CloudWatchLogsClient, table *tablewriter
 func checkLogGroupRetention(logGroup types.LogGroup, table *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("cloudwatch-retention")
 	if logGroup.RetentionInDays == nil {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, rule.Issue})
+		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, "Never", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *logGroup.LogGroupName, rule.Issue})
+		val := fmt.Sprintf("%d days", *logGroup.RetentionInDays)
+		table.Append([]string{rule.Service, "Pass", "-", *logGroup.LogGroupName, val, rule.Issue})
 	}
 }
 
 func checkLogGroupKmsEncryption(logGroup types.LogGroup, table *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("cloudwatch-log-group-encryption")
 	if logGroup.KmsKeyId == nil {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, rule.Issue})
+		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *logGroup.LogGroupName, rule.Issue})
+		table.Append([]string{rule.Service, "Pass", "-", *logGroup.LogGroupName, "Enabled", rule.Issue})
 	}
 }
 

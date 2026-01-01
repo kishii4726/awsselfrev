@@ -93,8 +93,8 @@ func checkLoggingEnabled(client api.CloudFrontClient, distID *string, table *tab
 
 	rule := rules.Get("cloudfront-logging-enabled")
 	if !standardLogging && !realtimeLogging {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *distID, rule.Issue})
+		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *distID, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *distID, rule.Issue})
+		table.Append([]string{rule.Service, "Pass", "-", *distID, "Enabled", rule.Issue})
 	}
 }

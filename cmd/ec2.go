@@ -34,9 +34,9 @@ var ec2Cmd = &cobra.Command{
 		}
 		ruleEbs := rules.Get("ec2-ebs-default-encryption")
 		if !ebsEncryptionEnabled {
-			tbl.Append([]string{ruleEbs.Service, "Fail", color.ColorizeLevel(ruleEbs.Level), "-", ruleEbs.Issue})
+			tbl.Append([]string{ruleEbs.Service, "Fail", color.ColorizeLevel(ruleEbs.Level), "-", "Disabled", ruleEbs.Issue})
 		} else {
-			tbl.Append([]string{ruleEbs.Service, "Pass", "-", "-", ruleEbs.Issue})
+			tbl.Append([]string{ruleEbs.Service, "Pass", "-", "-", "Enabled", ruleEbs.Issue})
 		}
 
 		// 2. Volume Encryption
@@ -46,13 +46,13 @@ var ec2Cmd = &cobra.Command{
 		}
 		ruleVol := rules.Get("ec2-volume-encryption")
 		if len(volumesResp.Volumes) == 0 {
-			tbl.Append([]string{ruleVol.Service, "Pass", "-", "No volumes", ruleVol.Issue})
+			tbl.Append([]string{ruleVol.Service, "Pass", "-", "No volumes", "-", ruleVol.Issue})
 		} else {
 			for _, v := range volumesResp.Volumes {
 				if !*v.Encrypted {
-					tbl.Append([]string{ruleVol.Service, "Fail", color.ColorizeLevel(ruleVol.Level), *v.VolumeId, ruleVol.Issue})
+					tbl.Append([]string{ruleVol.Service, "Fail", color.ColorizeLevel(ruleVol.Level), *v.VolumeId, "Disabled", ruleVol.Issue})
 				} else {
-					tbl.Append([]string{ruleVol.Service, "Pass", "-", *v.VolumeId, ruleVol.Issue})
+					tbl.Append([]string{ruleVol.Service, "Pass", "-", *v.VolumeId, "Enabled", ruleVol.Issue})
 				}
 			}
 		}
@@ -66,13 +66,13 @@ var ec2Cmd = &cobra.Command{
 		}
 		ruleSnap := rules.Get("ec2-snapshot-encryption")
 		if len(snapshotsResp.Snapshots) == 0 {
-			tbl.Append([]string{ruleSnap.Service, "Pass", "-", "No snapshots", ruleSnap.Issue})
+			tbl.Append([]string{ruleSnap.Service, "Pass", "-", "No snapshots", "-", ruleSnap.Issue})
 		} else {
 			for _, s := range snapshotsResp.Snapshots {
 				if !*s.Encrypted {
-					tbl.Append([]string{ruleSnap.Service, "Fail", color.ColorizeLevel(ruleSnap.Level), *s.SnapshotId, ruleSnap.Issue})
+					tbl.Append([]string{ruleSnap.Service, "Fail", color.ColorizeLevel(ruleSnap.Level), *s.SnapshotId, "Disabled", ruleSnap.Issue})
 				} else {
-					tbl.Append([]string{ruleSnap.Service, "Pass", "-", *s.SnapshotId, ruleSnap.Issue})
+					tbl.Append([]string{ruleSnap.Service, "Pass", "-", *s.SnapshotId, "Enabled", ruleSnap.Issue})
 				}
 			}
 		}
