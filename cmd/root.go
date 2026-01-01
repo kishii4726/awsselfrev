@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"awsselfrev/internal/config"
+	"context"
+	"fmt"
 	"os"
 
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +22,16 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Version: version,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		cfg := config.LoadConfig()
+		client := sts.NewFromConfig(cfg)
+		identity, err := client.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
+		if err != nil {
+			fmt.Printf("Failed to get AWS identity: %v\n", err)
+			return
+		}
+		fmt.Printf("Executing on AWS Account: %s\n", *identity.Account)
+	},
 }
 
 func Execute() {
