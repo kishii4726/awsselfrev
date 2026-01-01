@@ -1,40 +1,60 @@
 rules:
-  s3-encryption:
-    service: S3
-    level: Alert
-    issue: Bucket encryption is not set
-  s3-public-access:
-    service: S3
-    level: Alert
-    issue: Block public access is all off
-  s3-lifecycle:
-    service: S3
+  alb-access-logging:
+    service: ELB
     level: Warning
+    issue: Access logs are not enabled
+  alb-connection-logging:
+    service: ELB
+    level: Warning
+    issue: Connection logs are not enabled
+  alb-deletion-protection:
+    service: ELB
+    level: Warning
+    issue: Deletion protection is not enabled
+  cloudfront-logging-enabled:
+    service: CloudFront
+    level: Warning
+    issue: Logging is not enabled
+  cloudwatch-retention:
+    service: CloudWatchLogs
+    level: Alert
+    issue: Retention is set to never expire
+  cloudwatch-log-group-encryption:
+    service: CloudWatchLogs
+    level: Warning
+    issue: Log group is not encrypted with KMS
+  ecs-container-insights:
+    service: ECS
+    level: Warning
+    issue: Container Insights is not enabled
+  ecs-service-circuit-breaker:
+    service: ECS
+    level: Warning
+    issue: Circuit breaker is not enabled
+  ecs-cpu-architecture:
+    service: ECS
+    level: Warning
+    issue: ARM64 architecture is not used
+  ecs-propagate-tags:
+    service: ECS
+    level: Warning
+    issue: Propagate tags is not set
+  ecr-tag-immutability:
+    service: ECR
+    level: Warning
+    issue: Tags can be overwritten
+  ecr-image-scanning:
+    service: ECR
+    level: Warning
+    issue: Image scanning is not enabled
+  ecr-lifecycle-policy:
+    service: ECR
+    level: Info
     issue: Lifecycle policy is not set
-  s3-object-lock:
-    service: S3
+  telemetry-resource-tags-enabled:
+    service: ObservabilityAdmin
     level: Warning
-    issue: Object Lock is not enabled
-  s3-sse-kms-encryption:
-    service: S3
-    level: Warning
-    issue: SSE-KMS encryption is not set
-  s3-server-access-logging:
-    service: S3
-    level: Warning
-    issue: Server access logging is not enabled
-  ec2-ebs-default-encryption:
-    service: EC2
-    level: Warning
-    issue: Default encryption for EBS is not set
-  ec2-volume-encryption:
-    service: EC2
-    level: Alert
-    issue: EBS encryption is not set
-  ec2-snapshot-encryption:
-    service: EC2
-    level: Alert
-    issue: EBS encryption is not set
+    issue: Telemetry resource tags are not enabled
   rds-storage-encryption:
     service: RDS
     level: Alert
@@ -87,6 +107,34 @@ rules:
     service: RDS
     level: Warning
     issue: Maintenance window is not set to 22:00-05:00 JST
+  route53-query-logging:
+    service: Route53
+    level: Warning
+    issue: Query logging is not enabled
+  s3-encryption:
+    service: S3
+    level: Alert
+    issue: Bucket encryption is not set
+  s3-public-access:
+    service: S3
+    level: Alert
+    issue: Block public access is all off
+  s3-lifecycle:
+    service: S3
+    level: Warning
+    issue: Lifecycle policy is not set
+  s3-object-lock:
+    service: S3
+    level: Warning
+    issue: Object Lock is not enabled
+  s3-sse-kms-encryption:
+    service: S3
+    level: Warning
+    issue: SSE-KMS encryption is not set
+  s3-server-access-logging:
+    service: S3
+    level: Warning
+    issue: Server access logging is not enabled
   vpc-name-tag:
     service: VPC
     level: Info
@@ -103,67 +151,7 @@ rules:
     service: VPC
     level: Warning
     issue: VPC flow logs is not enabled
-  cloudwatch-retention:
-    service: CloudWatchLogs
-    level: Alert
-    issue: Retention is set to never expire
-  cloudwatch-log-group-encryption:
-    service: CloudWatchLogs
-    level: Warning
-    issue: Log group is not encrypted with KMS
-  ecr-tag-immutability:
-    service: ECR
-    level: Warning
-    issue: Tags can be overwritten
-  ecr-image-scanning:
-    service: ECR
-    level: Warning
-    issue: Image scanning is not enabled
-  ecr-lifecycle-policy:
-    service: ECR
-    level: Info
-    issue: Lifecycle policy is not set
   vpc-flow-logs-custom-format:
     service: VPC
     level: Info
     issue: Custom flow log format is not set or missing required fields
-  route53-query-logging:
-    service: Route53
-    level: Warning
-    issue: Query logging is not enabled
-  alb-access-logging:
-    service: ELB
-    level: Warning
-    issue: Access logs are not enabled
-  alb-connection-logging:
-    service: ELB
-    level: Warning
-    issue: Connection logs are not enabled
-  alb-deletion-protection:
-    service: ELB
-    level: Warning
-    issue: Deletion protection is not enabled
-  ecs-container-insights:
-    service: ECS
-    level: Warning
-    issue: Container Insights is not enabled
-  ecs-service-circuit-breaker:
-    service: ECS
-    level: Warning
-    issue: Circuit breaker is not enabled
-  ecs-cpu-architecture:
-    service: ECS
-    level: Warning
-    issue: ARM64 architecture is not used
-  ecs-propagate-tags:
-    service: ECS
-    level: Warning
-    issue: Propagate tags is not set
-  cloudfront-logging-enabled:
-    service: CloudFront
-    level: Warning
-    issue: Logging is not enabled
-  telemetry-resource-tags-enabled:
-    service: ObservabilityAdmin
-    level: Warning
-    issue: Telemetry resource tags are not enabled

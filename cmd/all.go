@@ -11,14 +11,16 @@ var allCmd = &cobra.Command{
 	Short: "Execute all commands",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Executing all subcommands...")
-		ec2Cmd.Run(ec2Cmd, args)
-		vpcCmd.Run(vpcCmd, args)
-		s3Cmd.Run(s3Cmd, args)
-		rdsCmd.Run(rdsCmd, args)
-		ecrCmd.Run(ecrCmd, args)
-		cloudwatchlogsCmd.Run(cloudwatchlogsCmd, args)
+		albCmd.Run(albCmd, args)
 		cloudfrontCmd.Run(cloudfrontCmd, args)
+		cloudwatchlogsCmd.Run(cloudwatchlogsCmd, args)
+		ecsCmd.Run(ecsCmd, args)
+		ecrCmd.Run(ecrCmd, args)
 		observabilityCmd.Run(observabilityCmd, args)
+		rdsCmd.Run(rdsCmd, args)
+		route53Cmd.Run(route53Cmd, args)
+		s3Cmd.Run(s3Cmd, args)
+		vpcCmd.Run(vpcCmd, args)
 	},
 }
 

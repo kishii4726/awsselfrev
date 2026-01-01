@@ -45,16 +45,20 @@ func checkLogGroupsRetention(client api.CloudWatchLogsClient, table *tablewriter
 }
 
 func checkLogGroupRetention(logGroup types.LogGroup, table *tablewriter.Table, rules config.RulesConfig) {
+	rule := rules.Get("cloudwatch-retention")
 	if logGroup.RetentionInDays == nil {
-		rule := rules.Get("cloudwatch-retention")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *logGroup.LogGroupName, rule.Issue})
 	}
 }
 
 func checkLogGroupKmsEncryption(logGroup types.LogGroup, table *tablewriter.Table, rules config.RulesConfig) {
+	rule := rules.Get("cloudwatch-log-group-encryption")
 	if logGroup.KmsKeyId == nil {
-		rule := rules.Get("cloudwatch-log-group-encryption")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *logGroup.LogGroupName, rule.Issue})
 	}
 }
 

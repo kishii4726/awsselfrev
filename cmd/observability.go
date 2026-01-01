@@ -42,12 +42,12 @@ func init() {
 
 func checkTelemetryResourceTags(client api.ObservabilityAdminClient, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.GetTelemetryEnrichmentStatus(context.TODO(), &observabilityadmin.GetTelemetryEnrichmentStatusInput{})
+	rule := rules.Get("telemetry-resource-tags-enabled")
 	if err != nil {
 		var ae smithy.APIError
 		if errors.As(err, &ae) && strings.Contains(ae.ErrorCode(), "ResourceNotFoundException") {
 			// If not found, it means it's not enabled.
-			rule := rules.Get("telemetry-resource-tags-enabled")
-			table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), "Account", rule.Issue})
+			table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), "Account", rule.Issue})
 			return
 		}
 		log.Printf("Failed to get telemetry enrichment status: %v", err)
@@ -55,7 +55,8 @@ func checkTelemetryResourceTags(client api.ObservabilityAdminClient, table *tabl
 	}
 
 	if resp.Status != types.TelemetryEnrichmentStatusRunning {
-		rule := rules.Get("telemetry-resource-tags-enabled")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), "Account", rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), "Account", rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", "Account", rule.Issue})
 	}
 }

@@ -36,29 +36,41 @@ and lifecycle rules for buckets with 'log' in their names. The results are displ
 }
 
 func checkBucketConfigurations(client api.S3Client, bucket string, table *tablewriter.Table, rules config.RulesConfig) {
+	ruleEnc := rules.Get("s3-encryption")
 	if !s3Internal.IsBucketEncrypted(client, bucket) {
-		rule := rules.Get("s3-encryption")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
+		table.Append([]string{ruleEnc.Service, "NG", color.ColorizeLevel(ruleEnc.Level), bucket, ruleEnc.Issue})
+	} else {
+		table.Append([]string{ruleEnc.Service, "Pass", "-", bucket, ruleEnc.Issue})
 	}
+	rulePub := rules.Get("s3-public-access")
 	if !s3Internal.IsBlockPublicAccessEnabled(client, bucket) {
-		rule := rules.Get("s3-public-access")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
+		table.Append([]string{rulePub.Service, "NG", color.ColorizeLevel(rulePub.Level), bucket, rulePub.Issue})
+	} else {
+		table.Append([]string{rulePub.Service, "Pass", "-", bucket, rulePub.Issue})
 	}
+	ruleLife := rules.Get("s3-lifecycle")
 	if !s3Internal.IsLifeCycleRuleConfiguredLogBucket(client, bucket) {
-		rule := rules.Get("s3-lifecycle")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
+		table.Append([]string{ruleLife.Service, "NG", color.ColorizeLevel(ruleLife.Level), bucket, ruleLife.Issue})
+	} else {
+		table.Append([]string{ruleLife.Service, "Pass", "-", bucket, ruleLife.Issue})
 	}
+	ruleLock := rules.Get("s3-object-lock")
 	if !s3Internal.IsObjectLockEnabled(client, bucket) {
-		rule := rules.Get("s3-object-lock")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
+		table.Append([]string{ruleLock.Service, "NG", color.ColorizeLevel(ruleLock.Level), bucket, ruleLock.Issue})
+	} else {
+		table.Append([]string{ruleLock.Service, "Pass", "-", bucket, ruleLock.Issue})
 	}
+	ruleKms := rules.Get("s3-sse-kms-encryption")
 	if !s3Internal.IsBucketEncryptedWithKMS(client, bucket) {
-		rule := rules.Get("s3-sse-kms-encryption")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
+		table.Append([]string{ruleKms.Service, "NG", color.ColorizeLevel(ruleKms.Level), bucket, ruleKms.Issue})
+	} else {
+		table.Append([]string{ruleKms.Service, "Pass", "-", bucket, ruleKms.Issue})
 	}
+	ruleLog := rules.Get("s3-server-access-logging")
 	if !s3Internal.IsServerAccessLoggingEnabled(client, bucket) {
-		rule := rules.Get("s3-server-access-logging")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), bucket, rule.Issue})
+		table.Append([]string{ruleLog.Service, "NG", color.ColorizeLevel(ruleLog.Level), bucket, ruleLog.Issue})
+	} else {
+		table.Append([]string{ruleLog.Service, "Pass", "-", bucket, ruleLog.Issue})
 	}
 }
 

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+
 	ec2Internal "awsselfrev/internal/aws/service/ec2"
 	"awsselfrev/internal/color"
 	"awsselfrev/internal/config"
@@ -25,31 +27,54 @@ var ec2Cmd = &cobra.Command{
 		client := ec2.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor()
 
+		// 1. EBS Default Encryption
 		ebsEncryptionEnabled, err := ec2Internal.IsEbsDefaultEncryptionEnabled(client)
 		if err != nil {
 			log.Fatalf("Failed to check EBS default encryption: %v", err)
 		}
+		ruleEbs := rules.Get("ec2-ebs-default-encryption")
 		if !ebsEncryptionEnabled {
-			rule := rules.Get("ec2-ebs-default-encryption")
-			tbl.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), "-", rule.Issue})
+			tbl.Append([]string{ruleEbs.Service, "NG", color.ColorizeLevel(ruleEbs.Level), "-", ruleEbs.Issue})
+		} else {
+			tbl.Append([]string{ruleEbs.Service, "Pass", "-", "-", ruleEbs.Issue})
 		}
 
-		unencryptedVolumes, err := ec2Internal.IsVolumeEncrypted(client)
+		// 2. Volume Encryption
+		volumesResp, err := client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{})
 		if err != nil {
-			log.Fatalf("Failed to check volume encryption: %v", err)
+			log.Fatalf("Failed to describe volumes: %v", err)
 		}
-		for _, v := range unencryptedVolumes {
-			rule := rules.Get("ec2-volume-encryption")
-			tbl.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), v, rule.Issue})
+		ruleVol := rules.Get("ec2-volume-encryption")
+		if len(volumesResp.Volumes) == 0 {
+			tbl.Append([]string{ruleVol.Service, "Pass", "-", "No volumes", ruleVol.Issue})
+		} else {
+			for _, v := range volumesResp.Volumes {
+				if !*v.Encrypted {
+					tbl.Append([]string{ruleVol.Service, "NG", color.ColorizeLevel(ruleVol.Level), *v.VolumeId, ruleVol.Issue})
+				} else {
+					tbl.Append([]string{ruleVol.Service, "Pass", "-", *v.VolumeId, ruleVol.Issue})
+				}
+			}
 		}
 
-		encryptedSnapshots, err := ec2Internal.IsSnapshotEncrypted(client)
+		// 3. Snapshot Encryption
+		snapshotsResp, err := client.DescribeSnapshots(context.TODO(), &ec2.DescribeSnapshotsInput{
+			OwnerIds: []string{"self"},
+		})
 		if err != nil {
-			log.Fatalf("Failed to check snapshot encryption: %v", err)
+			log.Fatalf("Failed to describe snapshots: %v", err)
 		}
-		for _, v := range encryptedSnapshots {
-			rule := rules.Get("ec2-snapshot-encryption")
-			tbl.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), v, rule.Issue})
+		ruleSnap := rules.Get("ec2-snapshot-encryption")
+		if len(snapshotsResp.Snapshots) == 0 {
+			tbl.Append([]string{ruleSnap.Service, "Pass", "-", "No snapshots", ruleSnap.Issue})
+		} else {
+			for _, s := range snapshotsResp.Snapshots {
+				if !*s.Encrypted {
+					tbl.Append([]string{ruleSnap.Service, "NG", color.ColorizeLevel(ruleSnap.Level), *s.SnapshotId, ruleSnap.Issue})
+				} else {
+					tbl.Append([]string{ruleSnap.Service, "Pass", "-", *s.SnapshotId, ruleSnap.Issue})
+				}
+			}
 		}
 
 		table.Render("EC2", tbl)

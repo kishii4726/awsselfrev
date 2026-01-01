@@ -71,9 +71,11 @@ func checkALBAccessLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.Des
 			break
 		}
 	}
+	rule := rules.Get("alb-access-logging")
 	if !enabled {
-		rule := rules.Get("alb-access-logging")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *lb.LoadBalancerName, rule.Issue})
 	}
 }
 
@@ -99,9 +101,11 @@ func checkALBConnectionLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2
 			break
 		}
 	}
+	rule := rules.Get("alb-connection-logging")
 	if !enabled {
-		rule := rules.Get("alb-connection-logging")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *lb.LoadBalancerName, rule.Issue})
 	}
 }
 
@@ -113,8 +117,10 @@ func checkALBDeletionProtection(lb types.LoadBalancer, attrs *elasticloadbalanci
 			break
 		}
 	}
+	rule := rules.Get("alb-deletion-protection")
 	if !enabled {
-		rule := rules.Get("alb-deletion-protection")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *lb.LoadBalancerName, rule.Issue})
 	}
 }

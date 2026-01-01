@@ -58,16 +58,20 @@ func describeRepositories(client api.ECRClient, table *tablewriter.Table, rules 
 }
 
 func checkTagImmutability(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
+	rule := rules.Get("ecr-tag-immutability")
 	if repo.ImageTagMutability == types.ImageTagMutabilityMutable {
-		rule := rules.Get("ecr-tag-immutability")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *repo.RepositoryName, rule.Issue})
 	}
 }
 
 func checkImageScanningConfiguration(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
+	rule := rules.Get("ecr-image-scanning")
 	if !repo.ImageScanningConfiguration.ScanOnPush {
-		rule := rules.Get("ecr-image-scanning")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *repo.RepositoryName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *repo.RepositoryName, rule.Issue})
 	}
 }
 
@@ -75,13 +79,15 @@ func checkLifecyclePolicy(client api.ECRClient, repoName string, table *tablewri
 	_, err := client.GetLifecyclePolicy(context.TODO(), &ecr.GetLifecyclePolicyInput{
 		RepositoryName: aws.String(repoName),
 	})
+	rule := rules.Get("ecr-lifecycle-policy")
 	if err != nil {
 		var re *awshttp.ResponseError
 		if errors.As(err, &re) && re.HTTPStatusCode() == 400 {
-			rule := rules.Get("ecr-lifecycle-policy")
-			table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), repoName, rule.Issue})
+			table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), repoName, rule.Issue})
 		} else {
 			log.Fatalf("Failed to describe lifecycle policy for repository %s: %v", repoName, err)
 		}
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", repoName, rule.Issue})
 	}
 }

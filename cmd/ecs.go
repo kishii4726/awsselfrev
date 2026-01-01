@@ -70,9 +70,11 @@ func checkContainerInsights(cluster types.Cluster, table *tablewriter.Table, rul
 		}
 	}
 
+	rule := rules.Get("ecs-container-insights")
 	if !enabled {
-		rule := rules.Get("ecs-container-insights")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *cluster.ClusterName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *cluster.ClusterName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *cluster.ClusterName, rule.Issue})
 	}
 }
 
@@ -104,9 +106,11 @@ func checkServices(client api.ECSClient, clusterArn string, clusterName string, 
 }
 
 func checkPropagateTags(service types.Service, table *tablewriter.Table, rules config.RulesConfig) {
+	rule := rules.Get("ecs-propagate-tags")
 	if service.PropagateTags == types.PropagateTagsNone {
-		rule := rules.Get("ecs-propagate-tags")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, rule.Issue})
 	}
 }
 
@@ -119,9 +123,11 @@ func checkCircuitBreaker(service types.Service, table *tablewriter.Table, rules 
 		enabled = true
 	}
 
+	rule := rules.Get("ecs-service-circuit-breaker")
 	if !enabled {
-		rule := rules.Get("ecs-service-circuit-breaker")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, rule.Issue})
 	}
 }
 
@@ -146,8 +152,10 @@ func checkCpuArchitecture(client api.ECSClient, service types.Service, table *ta
 		isArm64 = true
 	}
 
+	rule := rules.Get("ecs-cpu-architecture")
 	if !isArm64 {
-		rule := rules.Get("ecs-cpu-architecture")
-		table.Append([]string{rule.Service, color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
+		table.Append([]string{rule.Service, "NG", color.ColorizeLevel(rule.Level), *service.ServiceName, rule.Issue})
+	} else {
+		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, rule.Issue})
 	}
 }
