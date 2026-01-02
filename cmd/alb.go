@@ -39,14 +39,14 @@ func init() {
 	rootCmd.AddCommand(albCmd)
 }
 
-func checkALBConfigurations(client api.ELBv2Client, table *tablewriter.Table, rules config.RulesConfig) {
+func checkALBConfigurations(client api.ELBv2Client, tbl *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeLoadBalancers(context.TODO(), &elasticloadbalancingv2.DescribeLoadBalancersInput{})
 	if err != nil {
 		log.Fatalf("Failed to describe load balancers: %v", err)
 	}
 
 	if len(resp.LoadBalancers) == 0 {
-		table.Append([]string{"ALB", "-", "-", "No load balancers", "-", "-"})
+		table.AddRow(tbl, []string{"ALB", "-", "-", "No load balancers", "-", "-"})
 		return
 	}
 
@@ -62,13 +62,13 @@ func checkALBConfigurations(client api.ELBv2Client, table *tablewriter.Table, ru
 			log.Fatalf("Failed to describe attributes for ALB %s: %v", *lb.LoadBalancerName, err)
 		}
 
-		checkALBAccessLogs(lb, attrs, table, rules)
-		checkALBConnectionLogs(lb, attrs, table, rules)
-		checkALBDeletionProtection(lb, attrs, table, rules)
+		checkALBAccessLogs(lb, attrs, tbl, rules)
+		checkALBConnectionLogs(lb, attrs, tbl, rules)
+		checkALBDeletionProtection(lb, attrs, tbl, rules)
 	}
 }
 
-func checkALBAccessLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, table *tablewriter.Table, rules config.RulesConfig) {
+func checkALBAccessLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, tbl *tablewriter.Table, rules config.RulesConfig) {
 	enabled := false
 	for _, attr := range attrs.Attributes {
 		if *attr.Key == "access_logs.s3.enabled" && *attr.Value == "true" {
@@ -78,13 +78,13 @@ func checkALBAccessLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.Des
 	}
 	rule := rules.Get("alb-access-logging")
 	if !enabled {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *lb.LoadBalancerName, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *lb.LoadBalancerName, "Enabled", rule.Issue})
 	}
 }
 
-func checkALBConnectionLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, table *tablewriter.Table, rules config.RulesConfig) {
+func checkALBConnectionLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, tbl *tablewriter.Table, rules config.RulesConfig) {
 	// Connection logs are not a standard attribute like access_logs.s3.enabled for ALBs?
 	// Wait, ALB connection logs?
 	// Ah, maybe the user meant Access Logs (S3) and CONNECTION LOGS? There is no "Connection Logging" for ALB similar to Access Logging in the standard sense often used, UNLESS they mean "Connection Tracing"?
@@ -108,13 +108,13 @@ func checkALBConnectionLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2
 	}
 	rule := rules.Get("alb-connection-logging")
 	if !enabled {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *lb.LoadBalancerName, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *lb.LoadBalancerName, "Enabled", rule.Issue})
 	}
 }
 
-func checkALBDeletionProtection(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, table *tablewriter.Table, rules config.RulesConfig) {
+func checkALBDeletionProtection(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, tbl *tablewriter.Table, rules config.RulesConfig) {
 	enabled := false
 	for _, attr := range attrs.Attributes {
 		if *attr.Key == "deletion_protection.enabled" && *attr.Value == "true" {
@@ -124,8 +124,8 @@ func checkALBDeletionProtection(lb types.LoadBalancer, attrs *elasticloadbalanci
 	}
 	rule := rules.Get("alb-deletion-protection")
 	if !enabled {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *lb.LoadBalancerName, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *lb.LoadBalancerName, "Enabled", rule.Issue})
 	}
 }

@@ -3,16 +3,14 @@ package cmd
 import (
 	"context"
 	"log"
-	"strings"
 
 	"awsselfrev/internal/aws/api"
+	ec2Internal "awsselfrev/internal/aws/service/ec2"
 	"awsselfrev/internal/color"
 	"awsselfrev/internal/config"
 	"awsselfrev/internal/table"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -44,150 +42,72 @@ func checkVPCConfigurations(client api.EC2Client, tbl *tablewriter.Table, rules 
 	}
 
 	if len(resp.Vpcs) == 0 {
-		tbl.Append([]string{"VPC", "-", "-", "No VPCs", "-", "-"})
+		table.AddRow(tbl, []string{"VPC", "-", "-", "No VPCs", "-", "-"})
 		return
 	}
 
-	var data [][]string
 	for _, vpc := range resp.Vpcs {
 		vpcID := *vpc.VpcId
+		name := "Missing"
+		for _, tag := range vpc.Tags {
+			if *tag.Key == "Name" {
+				name = *tag.Value
+				break
+			}
+		}
 
+		// 1. Name Tag
 		ruleName := rules.Get("vpc-name-tag")
-		nameData := "Missing"
-		if hasNameTag(vpc.Tags) {
-			nameData = getNameTag(vpc.Tags)
-		}
-		if !hasNameTag(vpc.Tags) {
-			message := []string{ruleName.Service, "Fail", color.ColorizeLevel(ruleName.Level), vpcID, nameData, ruleName.Issue}
-			data = append(data, message)
+		if name == "Missing" {
+			table.AddRow(tbl, []string{ruleName.Service, "Fail", color.ColorizeLevel(ruleName.Level), vpcID, name, ruleName.Issue})
 		} else {
-			message := []string{ruleName.Service, "Pass", "-", vpcID, nameData, ruleName.Issue}
-			data = append(data, message)
+			table.AddRow(tbl, []string{ruleName.Service, "Pass", "-", vpcID, name, ruleName.Issue})
 		}
 
-		ruleDnsHost := rules.Get("vpc-dns-hostname")
-		if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsHostnames) {
-			message := []string{ruleDnsHost.Service, "Fail", color.ColorizeLevel(ruleDnsHost.Level), vpcID, "Disabled", ruleDnsHost.Issue}
-			data = append(data, message)
+		// 2. DNS Hostname
+		dnsHostnameEnabled, err := ec2Internal.IsDnsHostnamesEnabled(client, vpcID)
+		if err != nil {
+			log.Fatalf("Failed to check DNS hostname for VPC %s: %v", vpcID, err)
+		}
+		ruleDnsH := rules.Get("vpc-dns-hostname")
+		if !dnsHostnameEnabled {
+			table.AddRow(tbl, []string{ruleDnsH.Service, "Fail", color.ColorizeLevel(ruleDnsH.Level), vpcID, "Disabled", ruleDnsH.Issue})
 		} else {
-			message := []string{ruleDnsHost.Service, "Pass", "-", vpcID, "Enabled", ruleDnsHost.Issue}
-			data = append(data, message)
+			table.AddRow(tbl, []string{ruleDnsH.Service, "Pass", "-", vpcID, "Enabled", ruleDnsH.Issue})
 		}
 
-		ruleDnsSup := rules.Get("vpc-dns-support")
-		if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsSupport) {
-			message := []string{ruleDnsSup.Service, "Fail", color.ColorizeLevel(ruleDnsSup.Level), vpcID, "Disabled", ruleDnsSup.Issue}
-			data = append(data, message)
+		// 3. DNS Support
+		dnsSupportEnabled, err := ec2Internal.IsDnsSupportEnabled(client, vpcID)
+		if err != nil {
+			log.Fatalf("Failed to check DNS support for VPC %s: %v", vpcID, err)
+		}
+		ruleDnsS := rules.Get("vpc-dns-support")
+		if !dnsSupportEnabled {
+			table.AddRow(tbl, []string{ruleDnsS.Service, "Fail", color.ColorizeLevel(ruleDnsS.Level), vpcID, "Disabled", ruleDnsS.Issue})
 		} else {
-			message := []string{ruleDnsSup.Service, "Pass", "-", vpcID, "Enabled", ruleDnsSup.Issue}
-			data = append(data, message)
+			table.AddRow(tbl, []string{ruleDnsS.Service, "Pass", "-", vpcID, "Enabled", ruleDnsS.Issue})
 		}
 
+		// 4. Flow Logs
+		flowLogsEnabled, err := ec2Internal.IsVpcFlowLogsEnabled(client, vpcID)
+		if err != nil {
+			log.Fatalf("Failed to check Flow Logs for VPC %s: %v", vpcID, err)
+		}
 		ruleFlow := rules.Get("vpc-flow-logs")
-		if !isFlowLogsEnabled(client, vpcID) {
-			message := []string{ruleFlow.Service, "Fail", color.ColorizeLevel(ruleFlow.Level), vpcID, "Disabled", ruleFlow.Issue}
-			data = append(data, message)
+		if !flowLogsEnabled {
+			table.AddRow(tbl, []string{ruleFlow.Service, "Fail", color.ColorizeLevel(ruleFlow.Level), vpcID, "Disabled", ruleFlow.Issue})
 		} else {
 			// Flow logs enabled, check custom format
 			ruleFormat := rules.Get("vpc-flow-logs-custom-format")
-			if !hasCustomFlowLogFormat(client, vpcID) {
-				message := []string{ruleFormat.Service, "Fail", color.ColorizeLevel(ruleFormat.Level), vpcID, "Invalid", ruleFormat.Issue}
-				data = append(data, message)
+			if !ec2Internal.HasCustomFlowLogFormat(client, vpcID) { // Using new internal function
+				table.AddRow(tbl, []string{ruleFormat.Service, "Fail", color.ColorizeLevel(ruleFormat.Level), vpcID, "Invalid", ruleFormat.Issue})
 			} else {
-				message := []string{ruleFormat.Service, "Pass", "-", vpcID, "Valid", ruleFormat.Issue}
-				data = append(data, message)
+				table.AddRow(tbl, []string{ruleFormat.Service, "Pass", "-", vpcID, "Valid", ruleFormat.Issue})
 			}
 			// Also report flow logs enabled as Pass
-			message := []string{ruleFlow.Service, "Pass", "-", vpcID, "Enabled", ruleFlow.Issue}
-			data = append(data, message)
+			table.AddRow(tbl, []string{ruleFlow.Service, "Pass", "-", vpcID, "Enabled", ruleFlow.Issue})
 		}
 	}
-
-	for _, item := range data {
-		tbl.Append(item)
-	}
-}
-
-func hasNameTag(tags []types.Tag) bool {
-	for _, tag := range tags {
-		if *tag.Key == "Name" {
-			return true
-		}
-	}
-	return false
-}
-
-func getNameTag(tags []types.Tag) string {
-	for _, tag := range tags {
-		if *tag.Key == "Name" {
-			return *tag.Value
-		}
-	}
-	return ""
-}
-
-func isAttributeEnabled(client api.EC2Client, vpcID string, attribute types.VpcAttributeName) bool {
-	resp, err := client.DescribeVpcAttribute(context.TODO(), &ec2.DescribeVpcAttributeInput{
-		VpcId:     &vpcID,
-		Attribute: attribute,
-	})
-	if err != nil {
-		log.Fatalf("Failed to describe VPC attribute %s for VPC %s: %v", attribute, vpcID, err)
-	}
-	switch attribute {
-	case types.VpcAttributeNameEnableDnsHostnames:
-		return *resp.EnableDnsHostnames.Value
-	case types.VpcAttributeNameEnableDnsSupport:
-		return *resp.EnableDnsSupport.Value
-	}
-	return false
-}
-
-func isFlowLogsEnabled(client api.EC2Client, vpcID string) bool {
-	describeFlowLogsInput := &ec2.DescribeFlowLogsInput{
-		Filter: []types.Filter{
-			{
-				Name:   aws.String("resource-id"),
-				Values: []string{vpcID},
-			},
-		},
-	}
-
-	resp, err := client.DescribeFlowLogs(context.TODO(), describeFlowLogsInput)
-	if err != nil {
-		log.Fatalf("Failed to describe flow logs for VPC %s: %v", vpcID, err)
-	}
-
-	return len(resp.FlowLogs) > 0
-}
-
-func hasCustomFlowLogFormat(client api.EC2Client, vpcID string) bool {
-	describeFlowLogsInput := &ec2.DescribeFlowLogsInput{
-		Filter: []types.Filter{
-			{
-				Name:   aws.String("resource-id"),
-				Values: []string{vpcID},
-			},
-		},
-	}
-
-	resp, err := client.DescribeFlowLogs(context.TODO(), describeFlowLogsInput)
-	if err != nil {
-		log.Fatalf("Failed to describe flow logs for VPC %s: %v", vpcID, err)
-	}
-
-	for _, fl := range resp.FlowLogs {
-		if fl.LogFormat != nil {
-			fmt := *fl.LogFormat
-			if strings.Contains(fmt, "tcp-flags") &&
-				strings.Contains(fmt, "pkt-srcaddr") &&
-				strings.Contains(fmt, "pkt-dstaddr") &&
-				strings.Contains(fmt, "flow-direction") {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func init() {

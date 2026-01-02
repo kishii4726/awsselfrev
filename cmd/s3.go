@@ -35,7 +35,7 @@ and lifecycle rules for buckets with 'log' in their names. The results are displ
 func checkS3Configurations(client api.S3Client, tbl *tablewriter.Table, rules config.RulesConfig) {
 	buckets := s3Internal.ListBuckets(client)
 	if len(buckets) == 0 {
-		tbl.Append([]string{"S3", "-", "-", "No buckets", "-", "-"})
+		table.AddRow(tbl, []string{"S3", "-", "-", "No buckets", "-", "-"})
 		return
 	}
 	for _, bucket := range buckets {
@@ -43,42 +43,42 @@ func checkS3Configurations(client api.S3Client, tbl *tablewriter.Table, rules co
 	}
 }
 
-func checkBucketConfigurations(client api.S3Client, bucket string, table *tablewriter.Table, rules config.RulesConfig) {
+func checkBucketConfigurations(client api.S3Client, bucket string, tbl *tablewriter.Table, rules config.RulesConfig) {
 	ruleEnc := rules.Get("s3-encryption")
 	if !s3Internal.IsBucketEncrypted(client, bucket) {
-		table.Append([]string{ruleEnc.Service, "Fail", color.ColorizeLevel(ruleEnc.Level), bucket, "Disabled", ruleEnc.Issue})
+		table.AddRow(tbl, []string{ruleEnc.Service, "Fail", color.ColorizeLevel(ruleEnc.Level), bucket, "Disabled", ruleEnc.Issue})
 	} else {
-		table.Append([]string{ruleEnc.Service, "Pass", "-", bucket, "Enabled", ruleEnc.Issue})
+		table.AddRow(tbl, []string{ruleEnc.Service, "Pass", "-", bucket, "Enabled", ruleEnc.Issue})
 	}
 	rulePub := rules.Get("s3-public-access")
 	if !s3Internal.IsBlockPublicAccessEnabled(client, bucket) {
-		table.Append([]string{rulePub.Service, "Fail", color.ColorizeLevel(rulePub.Level), bucket, "Disabled", rulePub.Issue})
+		table.AddRow(tbl, []string{rulePub.Service, "Fail", color.ColorizeLevel(rulePub.Level), bucket, "Disabled", rulePub.Issue})
 	} else {
-		table.Append([]string{rulePub.Service, "Pass", "-", bucket, "Enabled", rulePub.Issue})
+		table.AddRow(tbl, []string{rulePub.Service, "Pass", "-", bucket, "Enabled", rulePub.Issue})
 	}
 	ruleLife := rules.Get("s3-lifecycle")
 	if !s3Internal.IsLifeCycleRuleConfiguredLogBucket(client, bucket) {
-		table.Append([]string{ruleLife.Service, "Fail", color.ColorizeLevel(ruleLife.Level), bucket, "Disabled", ruleLife.Issue})
+		table.AddRow(tbl, []string{ruleLife.Service, "Fail", color.ColorizeLevel(ruleLife.Level), bucket, "Disabled", ruleLife.Issue})
 	} else {
-		table.Append([]string{ruleLife.Service, "Pass", "-", bucket, "Enabled", ruleLife.Issue})
+		table.AddRow(tbl, []string{ruleLife.Service, "Pass", "-", bucket, "Enabled", ruleLife.Issue})
 	}
 	ruleLock := rules.Get("s3-object-lock")
 	if !s3Internal.IsObjectLockEnabled(client, bucket) {
-		table.Append([]string{ruleLock.Service, "Fail", color.ColorizeLevel(ruleLock.Level), bucket, "Disabled", ruleLock.Issue})
+		table.AddRow(tbl, []string{ruleLock.Service, "Fail", color.ColorizeLevel(ruleLock.Level), bucket, "Disabled", ruleLock.Issue})
 	} else {
-		table.Append([]string{ruleLock.Service, "Pass", "-", bucket, "Enabled", ruleLock.Issue})
+		table.AddRow(tbl, []string{ruleLock.Service, "Pass", "-", bucket, "Enabled", ruleLock.Issue})
 	}
 	ruleKms := rules.Get("s3-sse-kms-encryption")
 	if !s3Internal.IsBucketEncryptedWithKMS(client, bucket) {
-		table.Append([]string{ruleKms.Service, "Fail", color.ColorizeLevel(ruleKms.Level), bucket, "Disabled", ruleKms.Issue})
+		table.AddRow(tbl, []string{ruleKms.Service, "Fail", color.ColorizeLevel(ruleKms.Level), bucket, "Disabled", ruleKms.Issue})
 	} else {
-		table.Append([]string{ruleKms.Service, "Pass", "-", bucket, "Enabled", ruleKms.Issue})
+		table.AddRow(tbl, []string{ruleKms.Service, "Pass", "-", bucket, "Enabled", ruleKms.Issue})
 	}
 	ruleLog := rules.Get("s3-server-access-logging")
 	if !s3Internal.IsServerAccessLoggingEnabled(client, bucket) {
-		table.Append([]string{ruleLog.Service, "Fail", color.ColorizeLevel(ruleLog.Level), bucket, "Disabled", ruleLog.Issue})
+		table.AddRow(tbl, []string{ruleLog.Service, "Fail", color.ColorizeLevel(ruleLog.Level), bucket, "Disabled", ruleLog.Issue})
 	} else {
-		table.Append([]string{ruleLog.Service, "Pass", "-", bucket, "Enabled", ruleLog.Issue})
+		table.AddRow(tbl, []string{ruleLog.Service, "Pass", "-", bucket, "Enabled", ruleLog.Issue})
 	}
 }
 

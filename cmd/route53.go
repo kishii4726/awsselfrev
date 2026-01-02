@@ -36,7 +36,7 @@ func init() {
 	rootCmd.AddCommand(route53Cmd)
 }
 
-func checkRoute53Configurations(client api.Route53Client, table *tablewriter.Table, rules config.RulesConfig) {
+func checkRoute53Configurations(client api.Route53Client, tbl *tablewriter.Table, rules config.RulesConfig) {
 	// List Hosted Zones
 	zones, err := client.ListHostedZones(context.TODO(), &route53.ListHostedZonesInput{})
 	if err != nil {
@@ -44,7 +44,7 @@ func checkRoute53Configurations(client api.Route53Client, table *tablewriter.Tab
 	}
 
 	if len(zones.HostedZones) == 0 {
-		table.Append([]string{"Route53", "-", "-", "No hosted zones", "-", "-"})
+		table.AddRow(tbl, []string{"Route53", "-", "-", "No hosted zones", "-", "-"})
 		return
 	}
 
@@ -67,9 +67,9 @@ func checkRoute53Configurations(client api.Route53Client, table *tablewriter.Tab
 
 		rule := rules.Get("route53-query-logging")
 		if len(configs.QueryLoggingConfigs) == 0 {
-			table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *zone.Name, "Disabled", rule.Issue})
+			table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *zone.Name, "Disabled", rule.Issue})
 		} else {
-			table.Append([]string{rule.Service, "Pass", "-", *zone.Name, "Enabled", rule.Issue})
+			table.AddRow(tbl, []string{rule.Service, "Pass", "-", *zone.Name, "Enabled", rule.Issue})
 		}
 	}
 }

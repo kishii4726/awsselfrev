@@ -43,9 +43,9 @@ func checkEC2Configurations(client api.EC2Client, tbl *tablewriter.Table, rules 
 	}
 	ruleEbs := rules.Get("ec2-ebs-default-encryption")
 	if !ebsEncryptionEnabled {
-		tbl.Append([]string{ruleEbs.Service, "Fail", color.ColorizeLevel(ruleEbs.Level), "-", "Disabled", ruleEbs.Issue})
+		table.AddRow(tbl, []string{ruleEbs.Service, "Fail", color.ColorizeLevel(ruleEbs.Level), "-", "Disabled", ruleEbs.Issue})
 	} else {
-		tbl.Append([]string{ruleEbs.Service, "Pass", "-", "-", "Enabled", ruleEbs.Issue})
+		table.AddRow(tbl, []string{ruleEbs.Service, "Pass", "-", "-", "Enabled", ruleEbs.Issue})
 	}
 
 	// 2. Volume Encryption
@@ -55,13 +55,13 @@ func checkEC2Configurations(client api.EC2Client, tbl *tablewriter.Table, rules 
 	}
 	ruleVol := rules.Get("ec2-volume-encryption")
 	if len(volumesResp.Volumes) == 0 {
-		tbl.Append([]string{ruleVol.Service, "Pass", "-", "No volumes", "-", ruleVol.Issue})
+		table.AddRow(tbl, []string{ruleVol.Service, "Pass", "-", "No volumes", "-", ruleVol.Issue})
 	} else {
 		for _, v := range volumesResp.Volumes {
 			if !*v.Encrypted {
-				tbl.Append([]string{ruleVol.Service, "Fail", color.ColorizeLevel(ruleVol.Level), *v.VolumeId, "Disabled", ruleVol.Issue})
+				table.AddRow(tbl, []string{ruleVol.Service, "Fail", color.ColorizeLevel(ruleVol.Level), *v.VolumeId, "Disabled", ruleVol.Issue})
 			} else {
-				tbl.Append([]string{ruleVol.Service, "Pass", "-", *v.VolumeId, "Enabled", ruleVol.Issue})
+				table.AddRow(tbl, []string{ruleVol.Service, "Pass", "-", *v.VolumeId, "Enabled", ruleVol.Issue})
 			}
 		}
 	}
@@ -75,13 +75,13 @@ func checkEC2Configurations(client api.EC2Client, tbl *tablewriter.Table, rules 
 	}
 	ruleSnap := rules.Get("ec2-snapshot-encryption")
 	if len(snapshotsResp.Snapshots) == 0 {
-		tbl.Append([]string{ruleSnap.Service, "Pass", "-", "No snapshots", "-", ruleSnap.Issue})
+		table.AddRow(tbl, []string{ruleSnap.Service, "Pass", "-", "No snapshots", "-", ruleSnap.Issue})
 	} else {
 		for _, s := range snapshotsResp.Snapshots {
 			if !*s.Encrypted {
-				tbl.Append([]string{ruleSnap.Service, "Fail", color.ColorizeLevel(ruleSnap.Level), *s.SnapshotId, "Disabled", ruleSnap.Issue})
+				table.AddRow(tbl, []string{ruleSnap.Service, "Fail", color.ColorizeLevel(ruleSnap.Level), *s.SnapshotId, "Disabled", ruleSnap.Issue})
 			} else {
-				tbl.Append([]string{ruleSnap.Service, "Pass", "-", *s.SnapshotId, "Enabled", ruleSnap.Issue})
+				table.AddRow(tbl, []string{ruleSnap.Service, "Pass", "-", *s.SnapshotId, "Enabled", ruleSnap.Issue})
 			}
 		}
 	}

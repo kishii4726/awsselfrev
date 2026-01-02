@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"awsselfrev/internal/config"
+	"awsselfrev/internal/table"
 	"context"
 	"fmt"
 	"os"
@@ -28,6 +29,9 @@ S3, RDS, EC2, and VPC—and provides a consolidated report on their current stat
 			return
 		}
 		fmt.Printf("Executing on AWS Account: %s\n", *identity.Account)
+
+		failOnly, _ := cmd.Flags().GetBool("fail-only")
+		table.FailOnly = failOnly
 	},
 }
 
@@ -39,5 +43,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().BoolP("fail-only", "f", false, "Show only failed checks")
 }

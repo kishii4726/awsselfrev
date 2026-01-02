@@ -34,37 +34,37 @@ var cloudwatchlogsCmd = &cobra.Command{
 	},
 }
 
-func checkCloudWatchLogsConfigurations(client api.CloudWatchLogsClient, table *tablewriter.Table, rules config.RulesConfig) {
+func checkCloudWatchLogsConfigurations(client api.CloudWatchLogsClient, tbl *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeLogGroups(context.TODO(), &cloudwatchlogs.DescribeLogGroupsInput{})
 	if err != nil {
 		log.Fatalf("Failed to describe log groups: %v", err)
 	}
 	if len(resp.LogGroups) == 0 {
-		table.Append([]string{"CloudWatchLogs", "-", "-", "No log groups", "-", "-"})
+		table.AddRow(tbl, []string{"CloudWatchLogs", "-", "-", "No log groups", "-", "-"})
 		return
 	}
 	for _, logGroup := range resp.LogGroups {
-		checkLogGroupRetention(logGroup, table, rules)
-		checkLogGroupKmsEncryption(logGroup, table, rules)
+		checkLogGroupRetention(logGroup, tbl, rules)
+		checkLogGroupKmsEncryption(logGroup, tbl, rules)
 	}
 }
 
-func checkLogGroupRetention(logGroup types.LogGroup, table *tablewriter.Table, rules config.RulesConfig) {
+func checkLogGroupRetention(logGroup types.LogGroup, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("cloudwatch-retention")
 	if logGroup.RetentionInDays == nil {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, "Never", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, "Never", rule.Issue})
 	} else {
 		val := fmt.Sprintf("%d days", *logGroup.RetentionInDays)
-		table.Append([]string{rule.Service, "Pass", "-", *logGroup.LogGroupName, val, rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *logGroup.LogGroupName, val, rule.Issue})
 	}
 }
 
-func checkLogGroupKmsEncryption(logGroup types.LogGroup, table *tablewriter.Table, rules config.RulesConfig) {
+func checkLogGroupKmsEncryption(logGroup types.LogGroup, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("cloudwatch-log-group-encryption")
 	if logGroup.KmsKeyId == nil {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *logGroup.LogGroupName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *logGroup.LogGroupName, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *logGroup.LogGroupName, "Enabled", rule.Issue})
 	}
 }
 

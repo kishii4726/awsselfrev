@@ -39,7 +39,7 @@ func init() {
 	rootCmd.AddCommand(ecsCmd)
 }
 
-func checkECSConfigurations(client api.ECSClient, table *tablewriter.Table, rules config.RulesConfig) {
+func checkECSConfigurations(client api.ECSClient, tbl *tablewriter.Table, rules config.RulesConfig) {
 	// 1. Check Clusters
 	listResp, err := client.ListClusters(context.TODO(), &ecs.ListClustersInput{})
 	if err != nil {
@@ -47,7 +47,7 @@ func checkECSConfigurations(client api.ECSClient, table *tablewriter.Table, rule
 	}
 
 	if len(listResp.ClusterArns) == 0 {
-		table.Append([]string{"ECS", "-", "-", "No clusters", "-", "-"})
+		table.AddRow(tbl, []string{"ECS", "-", "-", "No clusters", "-", "-"})
 		return
 	}
 
@@ -60,13 +60,13 @@ func checkECSConfigurations(client api.ECSClient, table *tablewriter.Table, rule
 		}
 
 		for _, cluster := range descResp.Clusters {
-			checkContainerInsights(cluster, table, rules)
-			checkServices(client, *cluster.ClusterArn, *cluster.ClusterName, table, rules)
+			checkContainerInsights(cluster, tbl, rules)
+			checkServices(client, *cluster.ClusterArn, *cluster.ClusterName, tbl, rules)
 		}
 	}
 }
 
-func checkContainerInsights(cluster types.Cluster, table *tablewriter.Table, rules config.RulesConfig) {
+func checkContainerInsights(cluster types.Cluster, tbl *tablewriter.Table, rules config.RulesConfig) {
 	enabled := false
 	for _, setting := range cluster.Settings {
 		if setting.Name == types.ClusterSettingNameContainerInsights && setting.Value != nil && *setting.Value == "enabled" {
@@ -77,13 +77,13 @@ func checkContainerInsights(cluster types.Cluster, table *tablewriter.Table, rul
 
 	rule := rules.Get("ecs-container-insights")
 	if !enabled {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.ClusterName, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.ClusterName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *cluster.ClusterName, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *cluster.ClusterName, "Enabled", rule.Issue})
 	}
 }
 
-func checkServices(client api.ECSClient, clusterArn string, clusterName string, table *tablewriter.Table, rules config.RulesConfig) {
+func checkServices(client api.ECSClient, clusterArn string, clusterName string, tbl *tablewriter.Table, rules config.RulesConfig) {
 	// List Services
 	// Note: Pagination should be handled for production, but kept simple for now as per previous pattern.
 	svcResp, err := client.ListServices(context.TODO(), &ecs.ListServicesInput{
@@ -103,23 +103,23 @@ func checkServices(client api.ECSClient, clusterArn string, clusterName string, 
 		}
 
 		for _, service := range descResp.Services {
-			checkCircuitBreaker(service, table, rules)
-			checkCpuArchitecture(client, service, table, rules)
-			checkPropagateTags(service, table, rules)
+			checkCircuitBreaker(service, tbl, rules)
+			checkCpuArchitecture(client, service, tbl, rules)
+			checkPropagateTags(service, tbl, rules)
 		}
 	}
 }
 
-func checkPropagateTags(service types.Service, table *tablewriter.Table, rules config.RulesConfig) {
+func checkPropagateTags(service types.Service, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("ecs-propagate-tags")
 	if service.PropagateTags == types.PropagateTagsNone {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, string(service.PropagateTags), rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, string(service.PropagateTags), rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, string(service.PropagateTags), rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *service.ServiceName, string(service.PropagateTags), rule.Issue})
 	}
 }
 
-func checkCircuitBreaker(service types.Service, table *tablewriter.Table, rules config.RulesConfig) {
+func checkCircuitBreaker(service types.Service, tbl *tablewriter.Table, rules config.RulesConfig) {
 	// Circuit breaker is in DeploymentConfiguration
 	enabled := false
 	if service.DeploymentConfiguration != nil &&
@@ -130,13 +130,13 @@ func checkCircuitBreaker(service types.Service, table *tablewriter.Table, rules 
 
 	rule := rules.Get("ecs-service-circuit-breaker")
 	if !enabled {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *service.ServiceName, "Enabled", rule.Issue})
 	}
 }
 
-func checkCpuArchitecture(client api.ECSClient, service types.Service, table *tablewriter.Table, rules config.RulesConfig) {
+func checkCpuArchitecture(client api.ECSClient, service types.Service, tbl *tablewriter.Table, rules config.RulesConfig) {
 	// We need to look at the Task Definition
 	// service.TaskDefinition is an ARN.
 	if service.TaskDefinition == nil {
@@ -164,8 +164,8 @@ func checkCpuArchitecture(client api.ECSClient, service types.Service, table *ta
 
 	rule := rules.Get("ecs-cpu-architecture")
 	if !isArm64 {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, arch, rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *service.ServiceName, arch, rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *service.ServiceName, arch, rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *service.ServiceName, arch, rule.Issue})
 	}
 }

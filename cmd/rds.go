@@ -44,20 +44,20 @@ var rdsCmd = &cobra.Command{
 // Map to cache parameter group values: GroupName -> Key -> Value
 var paramGroupCache = make(map[string]map[string]string)
 
-func checkRDSConfigurations(client api.RDSClient, table *tablewriter.Table, rules config.RulesConfig) {
+func checkRDSConfigurations(client api.RDSClient, tbl *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeDBClusters(context.TODO(), &rds.DescribeDBClustersInput{})
 	if err != nil {
 		log.Fatalf("Failed to describe DB clusters: %v", err)
 	}
 
 	for _, cluster := range resp.DBClusters {
-		checkStorageEncryption(cluster, table, rules)
-		checkDeletionProtection(cluster, table, rules)
-		checkClusterBackupEnabled(cluster, table, rules)
-		checkClusterDefaultParameterGroup(cluster, table, rules)
-		checkClusterLogConfigurations(client, cluster, table, rules)
-		checkClusterMaintenanceWindow(cluster, table, rules)
-		checkDBInstances(client, cluster.DBClusterMembers, table, rules)
+		checkStorageEncryption(cluster, tbl, rules)
+		checkDeletionProtection(cluster, tbl, rules)
+		checkClusterBackupEnabled(cluster, tbl, rules)
+		checkClusterDefaultParameterGroup(cluster, tbl, rules)
+		checkClusterLogConfigurations(client, cluster, tbl, rules)
+		checkClusterMaintenanceWindow(cluster, tbl, rules)
+		checkDBInstances(client, cluster.DBClusterMembers, tbl, rules)
 	}
 
 	// Also check standalone instances if not covered by clusters (DBClusterMembers only covers cluster members).
@@ -83,62 +83,62 @@ func checkRDSConfigurations(client api.RDSClient, table *tablewriter.Table, rule
 			continue
 		}
 
-		checkAutoMinorVersionUpgrade(instance, table, rules)
-		checkInstanceDefaultParameterGroup(instance, table, rules)
-		checkPublicAccessibility(instance, table, rules)
-		checkPerformanceInsights(instance, table, rules)
-		checkInstanceLogConfigurations(client, instance, table, rules)
-		checkInstanceMaintenanceWindow(instance, table, rules)
+		checkAutoMinorVersionUpgrade(instance, tbl, rules)
+		checkInstanceDefaultParameterGroup(instance, tbl, rules)
+		checkPublicAccessibility(instance, tbl, rules)
+		checkPerformanceInsights(instance, tbl, rules)
+		checkInstanceLogConfigurations(client, instance, tbl, rules)
+		checkInstanceMaintenanceWindow(instance, tbl, rules)
 
 		processedInstances[*instance.DBInstanceIdentifier] = true
 	}
 
 	if len(resp.DBClusters) == 0 && len(instancesResp.DBInstances) == 0 {
-		table.Append([]string{"RDS", "-", "-", "No RDS resources", "-", "-"})
+		table.AddRow(tbl, []string{"RDS", "-", "-", "No RDS resources", "-", "-"})
 	}
 }
 
-func checkStorageEncryption(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
+func checkStorageEncryption(cluster types.DBCluster, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("rds-storage-encryption")
 	if cluster.StorageEncrypted != nil && !*cluster.StorageEncrypted {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, "Enabled", rule.Issue})
 	}
 }
 
-func checkDeletionProtection(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
+func checkDeletionProtection(cluster types.DBCluster, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("rds-deletion-protection")
 	if cluster.DeletionProtection != nil && !*cluster.DeletionProtection {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, "Enabled", rule.Issue})
 	}
 }
 
-func checkClusterBackupEnabled(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
+func checkClusterBackupEnabled(cluster types.DBCluster, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("rds-backup-enabled")
 	if cluster.BackupRetentionPeriod != nil && *cluster.BackupRetentionPeriod == 0 {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, "0 days", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, "0 days", rule.Issue})
 	} else {
 		val := "Enabled"
 		if cluster.BackupRetentionPeriod != nil {
 			val = strconv.Itoa(int(*cluster.BackupRetentionPeriod)) + " days"
 		}
-		table.Append([]string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, val, rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, val, rule.Issue})
 	}
 }
 
-func checkClusterDefaultParameterGroup(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
+func checkClusterDefaultParameterGroup(cluster types.DBCluster, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("rds-default-parameter-group")
 	pg := "None"
 	if cluster.DBClusterParameterGroup != nil {
 		pg = *cluster.DBClusterParameterGroup
 	}
 	if cluster.DBClusterParameterGroup != nil && strings.HasPrefix(*cluster.DBClusterParameterGroup, "default.") {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, pg, rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, pg, rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, pg, rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, pg, rule.Issue})
 	}
 }
 
@@ -146,21 +146,21 @@ func checkDBInstances(client api.RDSClient, members []types.DBClusterMember, tab
 	// fetching is now done in main loop to cover all instances
 }
 
-func checkAutoMinorVersionUpgrade(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
+func checkAutoMinorVersionUpgrade(instance types.DBInstance, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("rds-auto-minor-version-upgrade")
 	if instance.AutoMinorVersionUpgrade != nil && *instance.AutoMinorVersionUpgrade {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, "Enabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, "Disabled", rule.Issue})
 	}
 }
 
-func checkInstanceDefaultParameterGroup(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
+func checkInstanceDefaultParameterGroup(instance types.DBInstance, tbl *tablewriter.Table, rules config.RulesConfig) {
 	found := false
 	rule := rules.Get("rds-default-parameter-group")
 	for _, pg := range instance.DBParameterGroups {
 		if pg.DBParameterGroupName != nil && strings.HasPrefix(*pg.DBParameterGroupName, "default.") {
-			table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, *pg.DBParameterGroupName, rule.Issue})
+			table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, *pg.DBParameterGroupName, rule.Issue})
 			found = true
 			break // Report once per instance
 		}
@@ -170,31 +170,31 @@ func checkInstanceDefaultParameterGroup(instance types.DBInstance, table *tablew
 		if len(instance.DBParameterGroups) > 0 && instance.DBParameterGroups[0].DBParameterGroupName != nil {
 			pgName = *instance.DBParameterGroups[0].DBParameterGroupName
 		}
-		table.Append([]string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, pgName, rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, pgName, rule.Issue})
 	}
 }
 
-func checkPublicAccessibility(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
+func checkPublicAccessibility(instance types.DBInstance, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("rds-public-access")
 	if instance.PubliclyAccessible != nil && *instance.PubliclyAccessible {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, "Public", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, "Public", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, "Private", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, "Private", rule.Issue})
 	}
 }
 
-func checkPerformanceInsights(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
+func checkPerformanceInsights(instance types.DBInstance, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("rds-performance-insights")
 	if instance.PerformanceInsightsEnabled != nil && !*instance.PerformanceInsightsEnabled {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, "Enabled", rule.Issue})
 	}
 }
 
 // Log Checks
 
-func checkClusterLogConfigurations(client api.RDSClient, cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
+func checkClusterLogConfigurations(client api.RDSClient, cluster types.DBCluster, tbl *tablewriter.Table, rules config.RulesConfig) {
 	// Check Cluster logs (mostly for Aurora)
 	exports := cluster.EnabledCloudwatchLogsExports
 	pgName := ""
@@ -202,10 +202,10 @@ func checkClusterLogConfigurations(client api.RDSClient, cluster types.DBCluster
 		pgName = *cluster.DBClusterParameterGroup
 	}
 
-	checkLogs(client, pgName, exports, *cluster.DBClusterIdentifier, table, rules, true)
+	checkLogs(client, pgName, exports, *cluster.DBClusterIdentifier, tbl, rules, true)
 }
 
-func checkInstanceLogConfigurations(client api.RDSClient, instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
+func checkInstanceLogConfigurations(client api.RDSClient, instance types.DBInstance, tbl *tablewriter.Table, rules config.RulesConfig) {
 	// Check Instance logs (for RDS and Aurora members)
 	exports := instance.EnabledCloudwatchLogsExports
 	pgName := ""
@@ -214,27 +214,27 @@ func checkInstanceLogConfigurations(client api.RDSClient, instance types.DBInsta
 		pgName = *instance.DBParameterGroups[0].DBParameterGroupName
 	}
 
-	checkLogs(client, pgName, exports, *instance.DBInstanceIdentifier, table, rules, false)
+	checkLogs(client, pgName, exports, *instance.DBInstanceIdentifier, tbl, rules, false)
 }
 
-func checkClusterMaintenanceWindow(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {
+func checkClusterMaintenanceWindow(cluster types.DBCluster, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("rds-maintenance-window")
 	if cluster.PreferredMaintenanceWindow != nil {
 		if !isWindowValid(*cluster.PreferredMaintenanceWindow) {
-			table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, *cluster.PreferredMaintenanceWindow, rule.Issue})
+			table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.DBClusterIdentifier, *cluster.PreferredMaintenanceWindow, rule.Issue})
 		} else {
-			table.Append([]string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, *cluster.PreferredMaintenanceWindow, rule.Issue})
+			table.AddRow(tbl, []string{rule.Service, "Pass", "-", *cluster.DBClusterIdentifier, *cluster.PreferredMaintenanceWindow, rule.Issue})
 		}
 	}
 }
 
-func checkInstanceMaintenanceWindow(instance types.DBInstance, table *tablewriter.Table, rules config.RulesConfig) {
+func checkInstanceMaintenanceWindow(instance types.DBInstance, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("rds-maintenance-window")
 	if instance.PreferredMaintenanceWindow != nil {
 		if !isWindowValid(*instance.PreferredMaintenanceWindow) {
-			table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, *instance.PreferredMaintenanceWindow, rule.Issue})
+			table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *instance.DBInstanceIdentifier, *instance.PreferredMaintenanceWindow, rule.Issue})
 		} else {
-			table.Append([]string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, *instance.PreferredMaintenanceWindow, rule.Issue})
+			table.AddRow(tbl, []string{rule.Service, "Pass", "-", *instance.DBInstanceIdentifier, *instance.PreferredMaintenanceWindow, rule.Issue})
 		}
 	}
 }
@@ -278,7 +278,7 @@ func isWindowValid(window string) bool {
 	return false
 }
 
-func checkLogs(client api.RDSClient, pgName string, exports []string, identifier string, table *tablewriter.Table, rules config.RulesConfig, isCluster bool) {
+func checkLogs(client api.RDSClient, pgName string, exports []string, identifier string, tbl *tablewriter.Table, rules config.RulesConfig, isCluster bool) {
 	// Helper to check slice contains
 	contains := func(slice []string, item string) bool {
 		for _, s := range slice {
@@ -295,18 +295,18 @@ func checkLogs(client api.RDSClient, pgName string, exports []string, identifier
 	// Req: Exported AND (general_log=1 OR general_log=ON)
 	ruleGen := rules.Get("rds-general-log")
 	if !contains(exports, "general") || (params["general_log"] != "1" && strings.ToUpper(params["general_log"]) != "ON") {
-		table.Append([]string{ruleGen.Service, "Fail", color.ColorizeLevel(ruleGen.Level), identifier, "Disabled", ruleGen.Issue})
+		table.AddRow(tbl, []string{ruleGen.Service, "Fail", color.ColorizeLevel(ruleGen.Level), identifier, "Disabled", ruleGen.Issue})
 	} else {
-		table.Append([]string{ruleGen.Service, "Pass", "-", identifier, "Enabled", ruleGen.Issue})
+		table.AddRow(tbl, []string{ruleGen.Service, "Pass", "-", identifier, "Enabled", ruleGen.Issue})
 	}
 
 	// 2. Slow Query Log
 	// Req: Exported AND (slow_query_log=1 OR slow_query_log=ON)
 	ruleSlow := rules.Get("rds-slow-query-log")
 	if !contains(exports, "slowquery") || (params["slow_query_log"] != "1" && strings.ToUpper(params["slow_query_log"]) != "ON") {
-		table.Append([]string{ruleSlow.Service, "Fail", color.ColorizeLevel(ruleSlow.Level), identifier, "Disabled", ruleSlow.Issue})
+		table.AddRow(tbl, []string{ruleSlow.Service, "Fail", color.ColorizeLevel(ruleSlow.Level), identifier, "Disabled", ruleSlow.Issue})
 	} else {
-		table.Append([]string{ruleSlow.Service, "Pass", "-", identifier, "Enabled", ruleSlow.Issue})
+		table.AddRow(tbl, []string{ruleSlow.Service, "Pass", "-", identifier, "Enabled", ruleSlow.Issue})
 	}
 
 	// 3. Audit Log
@@ -326,9 +326,9 @@ func checkLogs(client api.RDSClient, pgName string, exports []string, identifier
 
 	ruleAudit := rules.Get("rds-audit-log")
 	if !contains(exports, "audit") || !auditEnabled {
-		table.Append([]string{ruleAudit.Service, "Fail", color.ColorizeLevel(ruleAudit.Level), identifier, "Disabled", ruleAudit.Issue})
+		table.AddRow(tbl, []string{ruleAudit.Service, "Fail", color.ColorizeLevel(ruleAudit.Level), identifier, "Disabled", ruleAudit.Issue})
 	} else {
-		table.Append([]string{ruleAudit.Service, "Pass", "-", identifier, "Enabled", ruleAudit.Issue})
+		table.AddRow(tbl, []string{ruleAudit.Service, "Pass", "-", identifier, "Enabled", ruleAudit.Issue})
 	}
 
 	// 4. Error Log
@@ -337,9 +337,9 @@ func checkLogs(client api.RDSClient, pgName string, exports []string, identifier
 	if !contains(exports, "error") && !contains(exports, "postgresql") && !contains(exports, "alert") { // Postgres uses 'postgresql', Oracle/MSSQL uses 'error'/'agent', MySql 'error'
 		// Loose check for any "error-like" log export presence if exact name varies,
 		// but 'error' is standard for MySQL. 'postgresql' for PG.
-		table.Append([]string{ruleErr.Service, "Fail", color.ColorizeLevel(ruleErr.Level), identifier, "Disabled", ruleErr.Issue})
+		table.AddRow(tbl, []string{ruleErr.Service, "Fail", color.ColorizeLevel(ruleErr.Level), identifier, "Disabled", ruleErr.Issue})
 	} else {
-		table.Append([]string{ruleErr.Service, "Pass", "-", identifier, "Enabled", ruleErr.Issue})
+		table.AddRow(tbl, []string{ruleErr.Service, "Pass", "-", identifier, "Enabled", ruleErr.Issue})
 	}
 }
 

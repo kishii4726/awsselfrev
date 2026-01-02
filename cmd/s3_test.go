@@ -108,8 +108,8 @@ func TestCheckBucketConfigurations(t *testing.T) {
 	checkBucketConfigurations(client, "test-bucket", tbl, rules)
 
 	// テーブルの内容を検証
-	// test-log-bucket: Encryption(F), Public(F), Lifecycle(F), ObjectLock(F), SSE-KMS(Skipped), AccessLogs(Skipped/Pass) -> 4 failures
-	// test-bucket: Encryption(F), Public(F), Lifecycle(Skipped), ObjectLock(Skipped), SSE-KMS(Checked->F), AccessLogs(Checked->F) -> 4 failures
-	// Total rows = 4 + 4 = 8
-	assert.Equal(t, 8, tbl.NumLines())
+	// test-log-bucket: Encryption, Public, Lifecycle, ObjectLock, SSE-KMS, AccessLogs (6 checks)
+	// test-bucket: Encryption, Public, Lifecycle, ObjectLock, SSE-KMS, AccessLogs (6 checks)
+	// Total rows = 12
+	assert.Equal(t, 12, tbl.NumLines())
 }

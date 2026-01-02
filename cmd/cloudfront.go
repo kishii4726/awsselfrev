@@ -36,26 +36,26 @@ func init() {
 	rootCmd.AddCommand(cloudfrontCmd)
 }
 
-func checkCloudFrontConfigurations(client api.CloudFrontClient, table *tablewriter.Table, rules config.RulesConfig) {
+func checkCloudFrontConfigurations(client api.CloudFrontClient, tbl *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.ListDistributions(context.TODO(), &cloudfront.ListDistributionsInput{})
 	if err != nil {
 		log.Fatalf("Failed to list CloudFront distributions: %v", err)
 	}
 
 	if resp.DistributionList == nil || len(resp.DistributionList.Items) == 0 {
-		table.Append([]string{"CloudFront", "-", "-", "No distributions", "-", "-"})
+		table.AddRow(tbl, []string{"CloudFront", "-", "-", "No distributions", "-", "-"})
 		return
 	}
 
 	if resp.DistributionList != nil {
 		for _, distSummary := range resp.DistributionList.Items {
-			checkLoggingEnabled(client, distSummary.Id, table, rules)
+			checkLoggingEnabled(client, distSummary.Id, tbl, rules)
 		}
 	}
 }
 
 // checkLoggingEnabled checks if either Standard Logging or Real-time Logging is enabled using GetDistributionConfig
-func checkLoggingEnabled(client api.CloudFrontClient, distID *string, table *tablewriter.Table, rules config.RulesConfig) {
+func checkLoggingEnabled(client api.CloudFrontClient, distID *string, tbl *tablewriter.Table, rules config.RulesConfig) {
 	if distID == nil {
 		return
 	}
@@ -64,8 +64,7 @@ func checkLoggingEnabled(client api.CloudFrontClient, distID *string, table *tab
 		Id: distID,
 	})
 	if err != nil {
-		log.Printf("Failed to get distribution config for %s: %v", *distID, err)
-		return
+		log.Fatalf("Failed to get CloudFront distribution config for %s: %v", *distID, err)
 	}
 
 	distConfig := configResp.DistributionConfig
@@ -74,32 +73,32 @@ func checkLoggingEnabled(client api.CloudFrontClient, distID *string, table *tab
 	}
 
 	// 1. Standard Logging
-	standardLogging := false
+	standardLoggingEnabled := false
 	if distConfig.Logging != nil && distConfig.Logging.Enabled != nil && *distConfig.Logging.Enabled {
-		standardLogging = true
+		standardLoggingEnabled = true
 	}
 
 	// 2. Real-time Logging
 	// Check Default Cache Behavior
-	realtimeLogging := false
+	realtimeLoggingEnabled := false
 	if distConfig.DefaultCacheBehavior != nil && distConfig.DefaultCacheBehavior.RealtimeLogConfigArn != nil && *distConfig.DefaultCacheBehavior.RealtimeLogConfigArn != "" {
-		realtimeLogging = true
+		realtimeLoggingEnabled = true
 	}
 
 	// Check other Cache Behaviors if default doesn't have it
-	if !realtimeLogging && distConfig.CacheBehaviors != nil {
+	if !realtimeLoggingEnabled && distConfig.CacheBehaviors != nil {
 		for _, behavior := range distConfig.CacheBehaviors.Items {
 			if behavior.RealtimeLogConfigArn != nil && *behavior.RealtimeLogConfigArn != "" {
-				realtimeLogging = true
+				realtimeLoggingEnabled = true
 				break
 			}
 		}
 	}
 
 	rule := rules.Get("cloudfront-logging-enabled")
-	if !standardLogging && !realtimeLogging {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *distID, "Disabled", rule.Issue})
+	if !standardLoggingEnabled && !realtimeLoggingEnabled {
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *distID, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *distID, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *distID, "Enabled", rule.Issue})
 	}
 }

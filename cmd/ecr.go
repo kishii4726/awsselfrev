@@ -42,7 +42,7 @@ func init() {
 	rootCmd.AddCommand(ecrCmd)
 }
 
-func checkECRConfigurations(client api.ECRClient, table *tablewriter.Table, rules config.RulesConfig) {
+func checkECRConfigurations(client api.ECRClient, tbl *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeRepositories(context.TODO(), &ecr.DescribeRepositoriesInput{
 		MaxResults: aws.Int32(100),
 	})
@@ -51,36 +51,36 @@ func checkECRConfigurations(client api.ECRClient, table *tablewriter.Table, rule
 	}
 
 	if len(resp.Repositories) == 0 {
-		table.Append([]string{"ECR", "-", "-", "No repositories", "-", "-"})
+		table.AddRow(tbl, []string{"ECR", "-", "-", "No repositories", "-", "-"})
 		return
 	}
 
 	for _, repo := range resp.Repositories {
-		checkTagImmutability(repo, table, rules)
-		checkImageScanningConfiguration(repo, table, rules)
-		checkLifecyclePolicy(client, *repo.RepositoryName, table, rules)
+		checkTagImmutability(repo, tbl, rules)
+		checkImageScanningConfiguration(repo, tbl, rules)
+		checkLifecyclePolicy(client, *repo.RepositoryName, tbl, rules)
 	}
 }
 
-func checkTagImmutability(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
+func checkTagImmutability(repo types.Repository, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("ecr-tag-immutability")
 	if repo.ImageTagMutability == types.ImageTagMutabilityMutable {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *repo.RepositoryName, "Mutable", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *repo.RepositoryName, "Mutable", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *repo.RepositoryName, "Immutable", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *repo.RepositoryName, "Immutable", rule.Issue})
 	}
 }
 
-func checkImageScanningConfiguration(repo types.Repository, table *tablewriter.Table, rules config.RulesConfig) {
+func checkImageScanningConfiguration(repo types.Repository, tbl *tablewriter.Table, rules config.RulesConfig) {
 	rule := rules.Get("ecr-image-scanning")
 	if !repo.ImageScanningConfiguration.ScanOnPush {
-		table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *repo.RepositoryName, "Disabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *repo.RepositoryName, "Disabled", rule.Issue})
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", *repo.RepositoryName, "Enabled", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *repo.RepositoryName, "Enabled", rule.Issue})
 	}
 }
 
-func checkLifecyclePolicy(client api.ECRClient, repoName string, table *tablewriter.Table, rules config.RulesConfig) {
+func checkLifecyclePolicy(client api.ECRClient, repoName string, tbl *tablewriter.Table, rules config.RulesConfig) {
 	_, err := client.GetLifecyclePolicy(context.TODO(), &ecr.GetLifecyclePolicyInput{
 		RepositoryName: aws.String(repoName),
 	})
@@ -88,11 +88,11 @@ func checkLifecyclePolicy(client api.ECRClient, repoName string, table *tablewri
 	if err != nil {
 		var re *awshttp.ResponseError
 		if errors.As(err, &re) && re.HTTPStatusCode() == 400 {
-			table.Append([]string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), repoName, "Missing", rule.Issue})
+			table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), repoName, "Missing", rule.Issue})
 		} else {
 			log.Fatalf("Failed to describe lifecycle policy for repository %s: %v", repoName, err)
 		}
 	} else {
-		table.Append([]string{rule.Service, "Pass", "-", repoName, "Set", rule.Issue})
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", repoName, "Set", rule.Issue})
 	}
 }
