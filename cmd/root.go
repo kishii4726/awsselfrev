@@ -14,13 +14,10 @@ var version string
 
 var rootCmd = &cobra.Command{
 	Use:   "awsselfrev",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Personal AWS best practice checker",
+	Long: `awsselfrev is a CLI tool that checks your AWS resource configurations against
+personal best practices. It evaluates settings for various services—including
+S3, RDS, EC2, and VPC—and provides a consolidated report on their current status.`,
 	Version: version,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
