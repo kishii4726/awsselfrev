@@ -1,56 +1,68 @@
 # awsselfrev
 
+CLI tool to check AWS resources against personal best practices.
+
 ## Install
+
+### Binary
+Download the binary from [Releases](https://github.com/kishii4726/awsselfrev/releases).
+
+```bash
+# Example for macOS (arm64)
+curl -L https://github.com/kishii4726/awsselfrev/releases/latest/download/awsselfrev_Darwin_arm64.tar.gz | tar xz
+chmod +x awsselfrev
+sudo mv awsselfrev /usr/local/bin/
 ```
-$ curl -OL <Release assets url>
 
-$ tar -zxvf <Download file name>
-
-$ sudo mv awsselfrev /usr/local/bin
+### From Source
+```bash
+go build -o awsselfrev main.go
 ```
 
 ## Usage
-```
-$ awsselfrev ecr
-+---------+---------+----------+-------------------------------+
-| SERVICE |  LEVEL  | RESOURCE |             ISSUE             |
-+---------+---------+----------+-------------------------------+
-| ECR     | Warning | repo1    | Image scanning is not enabled |
-+---------+---------+----------+-------------------------------+
-| ECR     | INFO    | repo2    | Lifecycle policy is not set   |
-+---------+---------+----------+-------------------------------+
 
-$ awsselfrev s3
-+---------+---------+----------------------------------------------------------------+--------------------------------+
-| SERVICE |  LEVEL  |                            RESOURCE                            |             ISSUE              |
-+---------+---------+----------------------------------------------------------------+--------------------------------+
-| S3      | Alert   | bucket1                                                        | Block public access is all off |
-+---------+---------+----------------------------------------------------------------+--------------------------------+
-| S3      | Warning | bucket2                                                        | Lifecycle policy is not set    |
-+---------+---------+----------------------------------------------------------------+--------------------------------+
+```bash
+# Check all services
+awsselfrev all
+
+# Check specific service
+awsselfrev s3
+
+# Show only failed checks
+awsselfrev all --fail-only (or -f)
 ```
 
-## Checks
+### Example Output
+```text
+Executing on AWS Account: 123456789012
++---------+--------+---------+-----------------+----------+--------------------------------+
+| SERVICE | STATUS |  LEVEL  |    RESOURCE     | SETTING  |             ISSUE              |
++---------+--------+---------+-----------------+----------+--------------------------------+
+| S3      | Fail   | Alert   | my-open-bucket  | Disabled | Block public access is all off |
+| S3      | Pass   | -       | my-safe-bucket  | Enabled  | Block public access is all off |
+| RDS     | Fail   | Warning | my-db-instance  | Disabled | Delete protection is not enabled|
++---------+--------+---------+-----------------+----------+--------------------------------+
+```
+
+## Supported Checks
+
 | Service | Level | Check |
 | --- | --- | --- |
-| S3 | Alert | Bucket encryption is not set |
-| S3 | Alert | Block public access is all off |
-| S3 | Warning | Lifecycle policy is not set |
-| S3 | Warning | Object Lock is not enabled |
-| S3 | Warning | SSE-KMS encryption is not set |
-| EC2 | Warning | Default encryption for EBS is not set |
-| EC2 | Alert | EBS encryption is not set |
-| EC2 | Alert | EBS encryption is not set (Snapshot) |
-| RDS | Alert | Storage encryption is not set |
-| RDS | Warning | Delete protection is not enabled |
-| RDS | Warning | Log export is not set |
-| RDS | Warning | Auto minor version upgrade is enabled |
-| VPC | Info | Name tag is not set |
-| VPC | Warning | DNS hostname is not enabled |
-| VPC | Warning | DNS support is not enabled |
-| VPC | Warning | VPC flow logs is not enabled |
-| VPC | Info | Custom flow log format is not set or missing required fields |
-| CloudWatchLogs | Alert | Retention is set to never expire |
-| ECR | Warning | Tags can be overwritten |
-| ECR | Warning | Image scanning is not enabled |
-| ECR | Info | Lifecycle policy is not set |
+| **S3** | Alert | Bucket encryption, Block public access |
+| | Warning | Lifecycle policy, Object Lock, SSE-KMS encryption, Server access logging |
+| **EC2** | Warning | Default EBS encryption |
+| | Alert | EBS Volume encryption, EBS Snapshot encryption |
+| **RDS** | Alert | Storage encryption, Public accessibility |
+| | Warning | Delete protection, Log export, Backup enabled, Default parameter group, Auto minor version upgrade, Performance Insights, Maintenance window (22:00-05:00 JST), General/Audit/Error/Slow query logs |
+| **VPC** | Info | Name tag, Custom flow log format |
+| | Warning | DNS hostname, DNS support, VPC flow logs |
+| **ALB** | Warning | Access logging, Connection logging, Deletion protection |
+| **CloudFront** | Warning | Logging enabled |
+| **CloudWatch** | Alert | Log retention (Never expire) |
+| | Warning | Log group KMS encryption |
+| **ECS** | Warning | Container Insights, Circuit breaker, CPU Architecture (ARM64), Propagate tags |
+| **ECR** | Warning | Tags immutability, Image scanning |
+| | Info | Lifecycle policy |
+| **Observability**| Warning | Telemetry resource tags |
+| **Route53** | Warning | Query logging |
+
