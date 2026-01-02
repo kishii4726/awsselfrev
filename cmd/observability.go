@@ -30,7 +30,7 @@ var observabilityCmd = &cobra.Command{
 		client := observabilityadmin.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor()
 
-		checkTelemetryResourceTags(client, tbl, rules)
+		checkObservabilityConfigurations(client, tbl, rules)
 
 		table.Render("Observability", tbl)
 	},
@@ -40,7 +40,7 @@ func init() {
 	rootCmd.AddCommand(observabilityCmd)
 }
 
-func checkTelemetryResourceTags(client api.ObservabilityAdminClient, table *tablewriter.Table, rules config.RulesConfig) {
+func checkObservabilityConfigurations(client api.ObservabilityAdminClient, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.GetTelemetryEnrichmentStatus(context.TODO(), &observabilityadmin.GetTelemetryEnrichmentStatusInput{})
 	rule := rules.Get("telemetry-resource-tags-enabled")
 	if err != nil {

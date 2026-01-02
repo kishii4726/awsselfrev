@@ -46,6 +46,11 @@ func checkECSConfigurations(client api.ECSClient, table *tablewriter.Table, rule
 		log.Fatalf("Failed to list ECS clusters: %v", err)
 	}
 
+	if len(listResp.ClusterArns) == 0 {
+		table.Append([]string{"ECS", "-", "-", "No clusters", "-", "-"})
+		return
+	}
+
 	if len(listResp.ClusterArns) > 0 {
 		descResp, err := client.DescribeClusters(context.TODO(), &ecs.DescribeClustersInput{
 			Clusters: listResp.ClusterArns,

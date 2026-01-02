@@ -28,16 +28,20 @@ var cloudwatchlogsCmd = &cobra.Command{
 		client := cloudwatchlogs.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor()
 
-		checkLogGroupsRetention(client, tbl, rules)
+		checkCloudWatchLogsConfigurations(client, tbl, rules)
 
 		table.Render("CloudWatchLogs", tbl)
 	},
 }
 
-func checkLogGroupsRetention(client api.CloudWatchLogsClient, table *tablewriter.Table, rules config.RulesConfig) {
+func checkCloudWatchLogsConfigurations(client api.CloudWatchLogsClient, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeLogGroups(context.TODO(), &cloudwatchlogs.DescribeLogGroupsInput{})
 	if err != nil {
 		log.Fatalf("Failed to describe log groups: %v", err)
+	}
+	if len(resp.LogGroups) == 0 {
+		table.Append([]string{"CloudWatchLogs", "-", "-", "No log groups", "-", "-"})
+		return
 	}
 	for _, logGroup := range resp.LogGroups {
 		checkLogGroupRetention(logGroup, table, rules)

@@ -26,7 +26,7 @@ var cloudfrontCmd = &cobra.Command{
 		client := cloudfront.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor()
 
-		checkCloudFrontDistributions(client, tbl, rules)
+		checkCloudFrontConfigurations(client, tbl, rules)
 
 		table.Render("CloudFront", tbl)
 	},
@@ -36,10 +36,15 @@ func init() {
 	rootCmd.AddCommand(cloudfrontCmd)
 }
 
-func checkCloudFrontDistributions(client api.CloudFrontClient, table *tablewriter.Table, rules config.RulesConfig) {
+func checkCloudFrontConfigurations(client api.CloudFrontClient, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.ListDistributions(context.TODO(), &cloudfront.ListDistributionsInput{})
 	if err != nil {
 		log.Fatalf("Failed to list CloudFront distributions: %v", err)
+	}
+
+	if resp.DistributionList == nil || len(resp.DistributionList.Items) == 0 {
+		table.Append([]string{"CloudFront", "-", "-", "No distributions", "-", "-"})
+		return
 	}
 
 	if resp.DistributionList != nil {

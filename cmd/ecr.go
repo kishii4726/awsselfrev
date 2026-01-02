@@ -32,7 +32,7 @@ var ecrCmd = &cobra.Command{
 		client := ecr.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor()
 
-		describeRepositories(client, tbl, rules)
+		checkECRConfigurations(client, tbl, rules)
 
 		table.Render("ECR", tbl)
 	},
@@ -42,12 +42,17 @@ func init() {
 	rootCmd.AddCommand(ecrCmd)
 }
 
-func describeRepositories(client api.ECRClient, table *tablewriter.Table, rules config.RulesConfig) {
+func checkECRConfigurations(client api.ECRClient, table *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeRepositories(context.TODO(), &ecr.DescribeRepositoriesInput{
 		MaxResults: aws.Int32(100),
 	})
 	if err != nil {
 		log.Fatalf("Failed to describe ECR repositories: %v", err)
+	}
+
+	if len(resp.Repositories) == 0 {
+		table.Append([]string{"ECR", "-", "-", "No repositories", "-", "-"})
+		return
 	}
 
 	for _, repo := range resp.Repositories {

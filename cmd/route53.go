@@ -26,7 +26,7 @@ var route53Cmd = &cobra.Command{
 		client := route53.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor()
 
-		checkQueryLogging(client, tbl, rules)
+		checkRoute53Configurations(client, tbl, rules)
 
 		table.Render("Route53", tbl)
 	},
@@ -36,11 +36,16 @@ func init() {
 	rootCmd.AddCommand(route53Cmd)
 }
 
-func checkQueryLogging(client api.Route53Client, table *tablewriter.Table, rules config.RulesConfig) {
+func checkRoute53Configurations(client api.Route53Client, table *tablewriter.Table, rules config.RulesConfig) {
 	// List Hosted Zones
 	zones, err := client.ListHostedZones(context.TODO(), &route53.ListHostedZonesInput{})
 	if err != nil {
 		log.Fatalf("Failed to list hosted zones: %v", err)
+	}
+
+	if len(zones.HostedZones) == 0 {
+		table.Append([]string{"Route53", "-", "-", "No hosted zones", "-", "-"})
+		return
 	}
 
 	for _, zone := range zones.HostedZones {

@@ -45,6 +45,11 @@ func checkALBConfigurations(client api.ELBv2Client, table *tablewriter.Table, ru
 		log.Fatalf("Failed to describe load balancers: %v", err)
 	}
 
+	if len(resp.LoadBalancers) == 0 {
+		table.Append([]string{"ALB", "-", "-", "No load balancers", "-", "-"})
+		return
+	}
+
 	for _, lb := range resp.LoadBalancers {
 		if lb.Type != types.LoadBalancerTypeEnumApplication {
 			continue

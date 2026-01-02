@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -30,72 +31,81 @@ as well as the status of DNS hostnames and DNS support. It also checks if VPC Fl
 		client := ec2.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor()
 
-		resp, err := client.DescribeVpcs(context.TODO(), &ec2.DescribeVpcsInput{})
-		if err != nil {
-			log.Fatalf("Failed to describe VPCs: %v", err)
-		}
-
-		var data [][]string
-		for _, vpc := range resp.Vpcs {
-			vpcID := *vpc.VpcId
-
-			ruleName := rules.Get("vpc-name-tag")
-			nameData := "Missing"
-			if hasNameTag(vpc.Tags) {
-				nameData = getNameTag(vpc.Tags)
-			}
-			if !hasNameTag(vpc.Tags) {
-				message := []string{ruleName.Service, "Fail", color.ColorizeLevel(ruleName.Level), vpcID, nameData, ruleName.Issue}
-				data = append(data, message)
-			} else {
-				message := []string{ruleName.Service, "Pass", "-", vpcID, nameData, ruleName.Issue}
-				data = append(data, message)
-			}
-
-			ruleDnsHost := rules.Get("vpc-dns-hostname")
-			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsHostnames) {
-				message := []string{ruleDnsHost.Service, "Fail", color.ColorizeLevel(ruleDnsHost.Level), vpcID, "Disabled", ruleDnsHost.Issue}
-				data = append(data, message)
-			} else {
-				message := []string{ruleDnsHost.Service, "Pass", "-", vpcID, "Enabled", ruleDnsHost.Issue}
-				data = append(data, message)
-			}
-
-			ruleDnsSup := rules.Get("vpc-dns-support")
-			if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsSupport) {
-				message := []string{ruleDnsSup.Service, "Fail", color.ColorizeLevel(ruleDnsSup.Level), vpcID, "Disabled", ruleDnsSup.Issue}
-				data = append(data, message)
-			} else {
-				message := []string{ruleDnsSup.Service, "Pass", "-", vpcID, "Enabled", ruleDnsSup.Issue}
-				data = append(data, message)
-			}
-
-			ruleFlow := rules.Get("vpc-flow-logs")
-			if !isFlowLogsEnabled(client, vpcID) {
-				message := []string{ruleFlow.Service, "Fail", color.ColorizeLevel(ruleFlow.Level), vpcID, "Disabled", ruleFlow.Issue}
-				data = append(data, message)
-			} else {
-				// Flow logs enabled, check custom format
-				ruleFormat := rules.Get("vpc-flow-logs-custom-format")
-				if !hasCustomFlowLogFormat(client, vpcID) {
-					message := []string{ruleFormat.Service, "Fail", color.ColorizeLevel(ruleFormat.Level), vpcID, "Invalid", ruleFormat.Issue}
-					data = append(data, message)
-				} else {
-					message := []string{ruleFormat.Service, "Pass", "-", vpcID, "Valid", ruleFormat.Issue}
-					data = append(data, message)
-				}
-				// Also report flow logs enabled as Pass
-				message := []string{ruleFlow.Service, "Pass", "-", vpcID, "Enabled", ruleFlow.Issue}
-				data = append(data, message)
-			}
-		}
-
-		for _, item := range data {
-			tbl.Append(item)
-		}
+		checkVPCConfigurations(client, tbl, rules)
 
 		table.Render("VPC", tbl)
 	},
+}
+
+func checkVPCConfigurations(client api.EC2Client, tbl *tablewriter.Table, rules config.RulesConfig) {
+	resp, err := client.DescribeVpcs(context.TODO(), &ec2.DescribeVpcsInput{})
+	if err != nil {
+		log.Fatalf("Failed to describe VPCs: %v", err)
+	}
+
+	if len(resp.Vpcs) == 0 {
+		tbl.Append([]string{"VPC", "-", "-", "No VPCs", "-", "-"})
+		return
+	}
+
+	var data [][]string
+	for _, vpc := range resp.Vpcs {
+		vpcID := *vpc.VpcId
+
+		ruleName := rules.Get("vpc-name-tag")
+		nameData := "Missing"
+		if hasNameTag(vpc.Tags) {
+			nameData = getNameTag(vpc.Tags)
+		}
+		if !hasNameTag(vpc.Tags) {
+			message := []string{ruleName.Service, "Fail", color.ColorizeLevel(ruleName.Level), vpcID, nameData, ruleName.Issue}
+			data = append(data, message)
+		} else {
+			message := []string{ruleName.Service, "Pass", "-", vpcID, nameData, ruleName.Issue}
+			data = append(data, message)
+		}
+
+		ruleDnsHost := rules.Get("vpc-dns-hostname")
+		if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsHostnames) {
+			message := []string{ruleDnsHost.Service, "Fail", color.ColorizeLevel(ruleDnsHost.Level), vpcID, "Disabled", ruleDnsHost.Issue}
+			data = append(data, message)
+		} else {
+			message := []string{ruleDnsHost.Service, "Pass", "-", vpcID, "Enabled", ruleDnsHost.Issue}
+			data = append(data, message)
+		}
+
+		ruleDnsSup := rules.Get("vpc-dns-support")
+		if !isAttributeEnabled(client, vpcID, types.VpcAttributeNameEnableDnsSupport) {
+			message := []string{ruleDnsSup.Service, "Fail", color.ColorizeLevel(ruleDnsSup.Level), vpcID, "Disabled", ruleDnsSup.Issue}
+			data = append(data, message)
+		} else {
+			message := []string{ruleDnsSup.Service, "Pass", "-", vpcID, "Enabled", ruleDnsSup.Issue}
+			data = append(data, message)
+		}
+
+		ruleFlow := rules.Get("vpc-flow-logs")
+		if !isFlowLogsEnabled(client, vpcID) {
+			message := []string{ruleFlow.Service, "Fail", color.ColorizeLevel(ruleFlow.Level), vpcID, "Disabled", ruleFlow.Issue}
+			data = append(data, message)
+		} else {
+			// Flow logs enabled, check custom format
+			ruleFormat := rules.Get("vpc-flow-logs-custom-format")
+			if !hasCustomFlowLogFormat(client, vpcID) {
+				message := []string{ruleFormat.Service, "Fail", color.ColorizeLevel(ruleFormat.Level), vpcID, "Invalid", ruleFormat.Issue}
+				data = append(data, message)
+			} else {
+				message := []string{ruleFormat.Service, "Pass", "-", vpcID, "Valid", ruleFormat.Issue}
+				data = append(data, message)
+			}
+			// Also report flow logs enabled as Pass
+			message := []string{ruleFlow.Service, "Pass", "-", vpcID, "Enabled", ruleFlow.Issue}
+			data = append(data, message)
+		}
+	}
+
+	for _, item := range data {
+		tbl.Append(item)
+	}
 }
 
 func hasNameTag(tags []types.Tag) bool {

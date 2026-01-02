@@ -92,6 +92,10 @@ func checkRDSConfigurations(client api.RDSClient, table *tablewriter.Table, rule
 
 		processedInstances[*instance.DBInstanceIdentifier] = true
 	}
+
+	if len(resp.DBClusters) == 0 && len(instancesResp.DBInstances) == 0 {
+		table.Append([]string{"RDS", "-", "-", "No RDS resources", "-", "-"})
+	}
 }
 
 func checkStorageEncryption(cluster types.DBCluster, table *tablewriter.Table, rules config.RulesConfig) {

@@ -26,13 +26,21 @@ and lifecycle rules for buckets with 'log' in their names. The results are displ
 		client := s3.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor() // Colors are now handling in table rendering or we just pass strings.
 
-		buckets := s3Internal.ListBuckets(client)
-		for _, bucket := range buckets {
-			checkBucketConfigurations(client, bucket, tbl, rules)
-		}
+		checkS3Configurations(client, tbl, rules)
 
 		table.Render("S3", tbl)
 	},
+}
+
+func checkS3Configurations(client api.S3Client, tbl *tablewriter.Table, rules config.RulesConfig) {
+	buckets := s3Internal.ListBuckets(client)
+	if len(buckets) == 0 {
+		tbl.Append([]string{"S3", "-", "-", "No buckets", "-", "-"})
+		return
+	}
+	for _, bucket := range buckets {
+		checkBucketConfigurations(client, bucket, tbl, rules)
+	}
 }
 
 func checkBucketConfigurations(client api.S3Client, bucket string, table *tablewriter.Table, rules config.RulesConfig) {
