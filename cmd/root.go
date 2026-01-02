@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version string
+var Version = "dev"
 
 var rootCmd = &cobra.Command{
 	Use:   "awsselfrev",
@@ -19,7 +19,7 @@ var rootCmd = &cobra.Command{
 	Long: `awsselfrev is a CLI tool that checks your AWS resource configurations against
 personal best practices. It evaluates settings for various services—including
 S3, RDS, EC2, and VPC—and provides a consolidated report on their current status.`,
-	Version: version,
+	Version: Version,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		cfg := config.LoadConfig()
 		client := sts.NewFromConfig(cfg)

@@ -13,7 +13,7 @@ builds:
     goos:
       - linux
     ldflags:
-      - "-X main.version={{.Version}}"
+      - "-s -w -X awsselfrev/cmd.Version={{.Tag}}"
 
   - id: awsselfrev-windows
     env:
@@ -21,7 +21,7 @@ builds:
     goos:
       - windows
     ldflags:
-      - "-X main.version={{.Version}}"
+      - "-s -w -X awsselfrev/cmd.Version={{.Tag}}"
 
   - id: awsselfrev-darwin
     env:
@@ -29,7 +29,7 @@ builds:
     goos:
       - darwin
     ldflags:
-      - "-X main.version={{.Version}}"
+      - "-s -w -X awsselfrev/cmd.Version={{.Tag}}"
 
 archives:
   - format: tar.gz
