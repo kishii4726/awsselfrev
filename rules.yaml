@@ -43,6 +43,10 @@ rules:
     service: ECS
     level: Warning
     issue: Propagate tags is not set
+  ecs-sensitive-environment-variables:
+    service: ECS
+    level: Alert
+    issue: Sensitive information (e.g., PASSWORD, TOKEN) found in environment variables. Use Secrets Manager or Parameter Store instead.
   ecs-exec-logging:
     service: ECS
     level: Warning
