@@ -49,20 +49,23 @@ Executing on AWS Account: 123456789012
 | Service | Level | Check |
 | --- | --- | --- |
 | **S3** | Alert | Bucket encryption, Block public access |
-| | Warning | Lifecycle policy, Object Lock, SSE-KMS encryption, Server access logging |
+| | Warning | Lifecycle policy, Object Lock, SSE-KMS encryption, Server access logging, S3 Storage Lens |
 | **EC2** | Warning | Default EBS encryption |
 | | Alert | EBS Volume encryption, EBS Snapshot encryption |
-| **RDS** | Alert | Storage encryption, Public accessibility |
-| | Warning | Delete protection, Log export, Backup enabled, Default parameter group, Auto minor version upgrade, Performance Insights, Maintenance window (22:00-05:00 JST), General/Audit/Error/Slow query logs |
+| **RDS** | Alert | Storage encryption, Public accessibility, Default parameter group |
+| | Warning | Delete protection, Log export, Backup enabled, Auto minor version upgrade, Performance Insights, Maintenance window (22:00-05:00 JST), General/Audit/Error/Slow query logs |
 | **VPC** | Info | Name tag, Custom flow log format |
 | | Warning | DNS hostname, DNS support, VPC flow logs |
-| **ELB** | Warning | Access logging, Connection logging, Deletion protection |
+| **ELB** | Alert | Target health |
+| | Warning | Access logging, Connection logging, Deletion protection |
 | **CloudFront** | Warning | Logging enabled |
 | **CloudWatch** | Alert | Log retention (Never expire) |
 | | Warning | Log group KMS encryption |
-| **ECS** | Warning | Container Insights, Circuit breaker, CPU Architecture (ARM64), Propagate tags |
+| **ECS** | Alert | Sensitive environment variables |
+| | Warning | Container Insights, Circuit breaker, CPU Architecture (ARM64), Propagate tags, ECS Exec logging |
 | **ECR** | Warning | Tags immutability, Image scanning |
 | | Info | Lifecycle policy |
 | **Observability**| Warning | Telemetry resource tags |
 | **Route53** | Warning | Query logging |
+| **WAFV2** | Warning | Logging enabled |
 
