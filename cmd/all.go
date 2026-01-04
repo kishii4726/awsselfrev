@@ -31,7 +31,7 @@ var allCmd = &cobra.Command{
 		_, _, _ = color.SetLevelColor()
 
 		// Initialize Clients
-		albClient := elasticloadbalancingv2.NewFromConfig(cfg)
+		elbClient := elasticloadbalancingv2.NewFromConfig(cfg)
 		cfClient := cloudfront.NewFromConfig(cfg)
 		cwLogsClient := cloudwatchlogs.NewFromConfig(cfg)
 		ec2Client := ec2.NewFromConfig(cfg)
@@ -48,7 +48,7 @@ var allCmd = &cobra.Command{
 		wafv2CFClient := wafv2.NewFromConfig(cfCfg)
 
 		// Run Checks
-		checkALBConfigurations(albClient, tbl, rules)
+		checkELBConfigurations(elbClient, tbl, rules)
 		checkCloudFrontConfigurations(cfClient, tbl, rules)
 		checkCloudWatchLogsConfigurations(cwLogsClient, tbl, rules)
 		checkEC2Configurations(ec2Client, tbl, rules)

@@ -1,14 +1,14 @@
 rules:
   alb-access-logging:
-    service: ALB
+    service: ELB
     level: Warning
     issue: Access logs are not enabled
   alb-connection-logging:
-    service: ALB
+    service: ELB
     level: Warning
     issue: Connection logs are not enabled
   alb-deletion-protection:
-    service: ALB
+    service: ELB
     level: Warning
     issue: Deletion protection is not enabled
   cloudfront-logging-enabled:

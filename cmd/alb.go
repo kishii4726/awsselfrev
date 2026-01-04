@@ -15,10 +15,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var albCmd = &cobra.Command{
-	Use:   "alb",
-	Short: "Check ALB configurations for best practices",
-	Long: `This command checks various ALB configurations and best practices such as:
+var elbCmd = &cobra.Command{
+	Use:   "elb",
+	Short: "Check ELB configurations for best practices",
+	Long: `This command checks various ELB configurations and best practices such as:
 - Access logging enabled
 - Connection logging enabled
 - Deletion protection enabled`,
@@ -29,24 +29,24 @@ var albCmd = &cobra.Command{
 		client := elasticloadbalancingv2.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor()
 
-		checkALBConfigurations(client, tbl, rules)
+		checkELBConfigurations(client, tbl, rules)
 
-		table.Render("ALB", tbl)
+		table.Render("ELB", tbl)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(albCmd)
+	rootCmd.AddCommand(elbCmd)
 }
 
-func checkALBConfigurations(client api.ELBv2Client, tbl *tablewriter.Table, rules config.RulesConfig) {
+func checkELBConfigurations(client api.ELBv2Client, tbl *tablewriter.Table, rules config.RulesConfig) {
 	resp, err := client.DescribeLoadBalancers(context.TODO(), &elasticloadbalancingv2.DescribeLoadBalancersInput{})
 	if err != nil {
 		log.Fatalf("Failed to describe load balancers: %v", err)
 	}
 
 	if len(resp.LoadBalancers) == 0 {
-		table.AddRow(tbl, []string{"ALB", "-", "-", "No load balancers", "-", "-"})
+		table.AddRow(tbl, []string{"ELB", "-", "-", "No load balancers", "-", "-"})
 		return
 	}
 
@@ -59,16 +59,16 @@ func checkALBConfigurations(client api.ELBv2Client, tbl *tablewriter.Table, rule
 			LoadBalancerArn: lb.LoadBalancerArn,
 		})
 		if err != nil {
-			log.Fatalf("Failed to describe attributes for ALB %s: %v", *lb.LoadBalancerName, err)
+			log.Fatalf("Failed to describe attributes for ELB %s: %v", *lb.LoadBalancerName, err)
 		}
 
-		checkALBAccessLogs(lb, attrs, tbl, rules)
-		checkALBConnectionLogs(lb, attrs, tbl, rules)
-		checkALBDeletionProtection(lb, attrs, tbl, rules)
+		checkELBAccessLogs(lb, attrs, tbl, rules)
+		checkELBConnectionLogs(lb, attrs, tbl, rules)
+		checkELBDeletionProtection(lb, attrs, tbl, rules)
 	}
 }
 
-func checkALBAccessLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, tbl *tablewriter.Table, rules config.RulesConfig) {
+func checkELBAccessLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, tbl *tablewriter.Table, rules config.RulesConfig) {
 	enabled := false
 	for _, attr := range attrs.Attributes {
 		if *attr.Key == "access_logs.s3.enabled" && *attr.Value == "true" {
@@ -84,21 +84,7 @@ func checkALBAccessLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.Des
 	}
 }
 
-func checkALBConnectionLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, tbl *tablewriter.Table, rules config.RulesConfig) {
-	// Connection logs are not a standard attribute like access_logs.s3.enabled for ALBs?
-	// Wait, ALB connection logs?
-	// Ah, maybe the user meant Access Logs (S3) and CONNECTION LOGS? There is no "Connection Logging" for ALB similar to Access Logging in the standard sense often used, UNLESS they mean "Connection Tracing"?
-	// Or maybe they mean "Connection termination"?
-	// Checking AWS docs... "connection_logs.s3.enabled" exists for NLB/GWLB, but for ALB?
-	// ALB has "access_logs.s3.enabled".
-	// ALB also has "connection_logs.s3.enabled" is NOT valid for ALB.
-	// But wait, user asked for "ALBの接続ログ" (Connection logs).
-	// Let's re-read the request. "ALBの接続ログの取得が有効化されているか".
-	// AWS ALB Connection Logs were introduced recently?
-	// Actually, "Connection logs" are available for ALB.
-	// Attribute: `connection_logs.s3.enabled`.
-	// Let's assume the attribute key is `connection_logs.s3.enabled`.
-
+func checkELBConnectionLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, tbl *tablewriter.Table, rules config.RulesConfig) {
 	enabled := false
 	for _, attr := range attrs.Attributes {
 		if *attr.Key == "connection_logs.s3.enabled" && *attr.Value == "true" {
@@ -114,7 +100,7 @@ func checkALBConnectionLogs(lb types.LoadBalancer, attrs *elasticloadbalancingv2
 	}
 }
 
-func checkALBDeletionProtection(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, tbl *tablewriter.Table, rules config.RulesConfig) {
+func checkELBDeletionProtection(lb types.LoadBalancer, attrs *elasticloadbalancingv2.DescribeLoadBalancerAttributesOutput, tbl *tablewriter.Table, rules config.RulesConfig) {
 	enabled := false
 	for _, attr := range attrs.Attributes {
 		if *attr.Key == "deletion_protection.enabled" && *attr.Value == "true" {
