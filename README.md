@@ -56,7 +56,7 @@ Executing on AWS Account: 123456789012
 | | Warning | Delete protection, Log export, Backup enabled, Default parameter group, Auto minor version upgrade, Performance Insights, Maintenance window (22:00-05:00 JST), General/Audit/Error/Slow query logs |
 | **VPC** | Info | Name tag, Custom flow log format |
 | | Warning | DNS hostname, DNS support, VPC flow logs |
-| **ALB** | Warning | Access logging, Connection logging, Deletion protection |
+| **ELB** | Warning | Access logging, Connection logging, Deletion protection |
 | **CloudFront** | Warning | Logging enabled |
 | **CloudWatch** | Alert | Log retention (Never expire) |
 | | Warning | Log group KMS encryption |
