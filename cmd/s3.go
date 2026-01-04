@@ -8,6 +8,7 @@ import (
 	"awsselfrev/internal/table"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3control"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -24,15 +25,17 @@ and lifecycle rules for buckets with 'log' in their names. The results are displ
 		rules := config.LoadRules()
 		tbl := table.SetTable()
 		client := s3.NewFromConfig(cfg)
+		controlClient := s3control.NewFromConfig(cfg)
 		_, _, _ = color.SetLevelColor() // Colors are now handling in table rendering or we just pass strings.
 
-		checkS3Configurations(client, tbl, rules)
+		checkS3Configurations(client, controlClient, tbl, rules)
 
 		table.Render("S3", tbl)
 	},
 }
 
-func checkS3Configurations(client api.S3Client, tbl *tablewriter.Table, rules config.RulesConfig) {
+func checkS3Configurations(client api.S3Client, controlClient api.S3ControlClient, tbl *tablewriter.Table, rules config.RulesConfig) {
+	checkS3StorageLens(controlClient, tbl, rules)
 	buckets := s3Internal.ListBuckets(client)
 	if len(buckets) == 0 {
 		table.AddRow(tbl, []string{"S3", "-", "-", "No buckets", "-", "-"})
@@ -84,4 +87,13 @@ func checkBucketConfigurations(client api.S3Client, bucket string, tbl *tablewri
 
 func init() {
 	rootCmd.AddCommand(s3Cmd)
+}
+
+func checkS3StorageLens(client api.S3ControlClient, tbl *tablewriter.Table, rules config.RulesConfig) {
+	rule := rules.Get("s3-storage-lens-enabled")
+	if !s3Internal.IsStorageLensEnabled(client, AccountID) {
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), "-", "Disabled", rule.Issue})
+	} else {
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", "-", "Enabled", rule.Issue})
+	}
 }

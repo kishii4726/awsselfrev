@@ -13,7 +13,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3control"
 )
+
+type S3ControlClient interface {
+	ListStorageLensConfigurations(ctx context.Context, params *s3control.ListStorageLensConfigurationsInput, optFns ...func(*s3control.Options)) (*s3control.ListStorageLensConfigurationsOutput, error)
+}
 
 type S3Client interface {
 	ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error)

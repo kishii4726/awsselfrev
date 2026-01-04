@@ -12,6 +12,7 @@ import (
 )
 
 var Version = "dev"
+var AccountID string
 
 var rootCmd = &cobra.Command{
 	Use:   "awsselfrev",
@@ -29,6 +30,7 @@ S3, RDS, EC2, and VPC—and provides a consolidated report on their current stat
 			return
 		}
 		fmt.Printf("Executing on AWS Account: %s\n", *identity.Account)
+		AccountID = *identity.Account
 
 		failOnly, _ := cmd.Flags().GetBool("fail-only")
 		table.FailOnly = failOnly

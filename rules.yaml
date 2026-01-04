@@ -135,6 +135,10 @@ rules:
     service: S3
     level: Warning
     issue: Server access logging is not enabled
+  s3-storage-lens-enabled:
+    service: S3
+    level: Warning
+    issue: S3 Storage Lens is not enabled
   vpc-name-tag:
     service: VPC
     level: Info

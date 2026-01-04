@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3control"
 
 	"github.com/spf13/cobra"
 )
@@ -39,6 +40,7 @@ var allCmd = &cobra.Command{
 		rdsClient := rds.NewFromConfig(cfg)
 		route53Client := route53.NewFromConfig(cfg)
 		s3Client := s3.NewFromConfig(cfg)
+		s3ControlClient := s3control.NewFromConfig(cfg)
 
 		// Run Checks
 		checkALBConfigurations(albClient, tbl, rules)
@@ -50,7 +52,7 @@ var allCmd = &cobra.Command{
 		checkObservabilityConfigurations(obsClient, tbl, rules)
 		checkRDSConfigurations(rdsClient, tbl, rules)
 		checkRoute53Configurations(route53Client, tbl, rules)
-		checkS3Configurations(s3Client, tbl, rules)
+		checkS3Configurations(s3Client, s3ControlClient, tbl, rules)
 		checkVPCConfigurations(ec2Client, tbl, rules)
 
 		table.Render("All Services", tbl)

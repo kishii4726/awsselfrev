@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3control"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -64,6 +65,15 @@ func (m *MockS3Client) GetBucketLogging(ctx context.Context, params *s3.GetBucke
 	return args.Get(0).(*s3.GetBucketLoggingOutput), args.Error(1)
 }
 
+type MockS3ControlClient struct {
+	mock.Mock
+}
+
+func (m *MockS3ControlClient) ListStorageLensConfigurations(ctx context.Context, params *s3control.ListStorageLensConfigurationsInput, optFns ...func(*s3control.Options)) (*s3control.ListStorageLensConfigurationsOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	return args.Get(0).(*s3control.ListStorageLensConfigurationsOutput), args.Error(1)
+}
+
 type MockHTTPStatusError struct {
 	StatusCode int
 }
@@ -73,6 +83,7 @@ func (m MockHTTPStatusError) HTTPStatusCode() int { return m.StatusCode }
 
 func TestCheckBucketConfigurations(t *testing.T) {
 	client := new(MockS3Client)
+	controlClient := new(MockS3ControlClient)
 	// テスト用のデータを設定 (Use log bucket to trigger all checks)
 	buckets := []types.Bucket{
 		{Name: aws.String("test-log-bucket")},
@@ -88,6 +99,7 @@ func TestCheckBucketConfigurations(t *testing.T) {
 	client.On("GetBucketLifecycleConfiguration", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetBucketLifecycleConfigurationOutput)(nil), err404)
 	client.On("GetObjectLockConfiguration", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetObjectLockConfigurationOutput)(nil), err404)
 	client.On("GetBucketLogging", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetBucketLoggingOutput)(nil), err404)
+	controlClient.On("ListStorageLensConfigurations", mock.Anything, mock.Anything, mock.Anything).Return(&s3control.ListStorageLensConfigurationsOutput{}, nil)
 
 	// テーブルのセットアップ
 	tbl := table.SetTable()
@@ -100,16 +112,17 @@ func TestCheckBucketConfigurations(t *testing.T) {
 			"s3-object-lock":           {Service: "S3", Level: "Warning", Issue: "Object Lock is not enabled"},
 			"s3-sse-kms-encryption":    {Service: "S3", Level: "Warning", Issue: "SSE-KMS encryption is not set"},
 			"s3-server-access-logging": {Service: "S3", Level: "Warning", Issue: "Server access logging is not enabled"},
+			"s3-storage-lens-enabled":  {Service: "S3", Level: "Warning", Issue: "S3 Storage Lens is not enabled"},
 		},
 	}
 
 	// テスト対象の関数を呼び出し
-	checkBucketConfigurations(client, "test-log-bucket", tbl, rules)
-	checkBucketConfigurations(client, "test-bucket", tbl, rules)
+	checkS3Configurations(client, controlClient, tbl, rules)
 
 	// テーブルの内容を検証
+	// Storage Lens: 1 check
 	// test-log-bucket: Encryption, Public, Lifecycle, ObjectLock, SSE-KMS, AccessLogs (6 checks)
 	// test-bucket: Encryption, Public, Lifecycle, ObjectLock, SSE-KMS, AccessLogs (6 checks)
-	// Total rows = 12
-	assert.Equal(t, 12, tbl.NumLines())
+	// Total rows = 1 + 6 + 6 = 13
+	assert.Equal(t, 13, tbl.NumLines())
 }
