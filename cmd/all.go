@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3control"
+	"github.com/aws/aws-sdk-go-v2/service/wafv2"
 
 	"github.com/spf13/cobra"
 )
@@ -41,6 +42,10 @@ var allCmd = &cobra.Command{
 		route53Client := route53.NewFromConfig(cfg)
 		s3Client := s3.NewFromConfig(cfg)
 		s3ControlClient := s3control.NewFromConfig(cfg)
+		wafv2Client := wafv2.NewFromConfig(cfg)
+		cfCfg := cfg.Copy()
+		cfCfg.Region = "us-east-1"
+		wafv2CFClient := wafv2.NewFromConfig(cfCfg)
 
 		// Run Checks
 		checkALBConfigurations(albClient, tbl, rules)
@@ -52,6 +57,7 @@ var allCmd = &cobra.Command{
 		checkObservabilityConfigurations(obsClient, tbl, rules)
 		checkRDSConfigurations(rdsClient, tbl, rules)
 		checkRoute53Configurations(route53Client, tbl, rules)
+		checkWAFV2Configurations(wafv2Client, wafv2CFClient, tbl, rules)
 		checkS3Configurations(s3Client, s3ControlClient, tbl, rules)
 		checkVPCConfigurations(ec2Client, tbl, rules)
 

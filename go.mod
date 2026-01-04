@@ -17,6 +17,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.58.2
 	github.com/aws/aws-sdk-go-v2/service/s3control v1.67.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.4
+	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.70.6
 	github.com/aws/smithy-go v1.24.0
 	github.com/fatih/color v1.17.0
 	github.com/olekukonko/tablewriter v0.0.5

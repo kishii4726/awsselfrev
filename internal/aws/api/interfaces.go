@@ -14,7 +14,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3control"
+	"github.com/aws/aws-sdk-go-v2/service/wafv2"
 )
+
+type WAFV2Client interface {
+	ListWebACLs(ctx context.Context, params *wafv2.ListWebACLsInput, optFns ...func(*wafv2.Options)) (*wafv2.ListWebACLsOutput, error)
+	GetLoggingConfiguration(ctx context.Context, params *wafv2.GetLoggingConfigurationInput, optFns ...func(*wafv2.Options)) (*wafv2.GetLoggingConfigurationOutput, error)
+}
 
 type S3ControlClient interface {
 	ListStorageLensConfigurations(ctx context.Context, params *s3control.ListStorageLensConfigurationsInput, optFns ...func(*s3control.Options)) (*s3control.ListStorageLensConfigurationsOutput, error)

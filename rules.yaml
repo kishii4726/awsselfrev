@@ -171,3 +171,7 @@ rules:
     service: EC2
     level: Alert
     issue: EBS encryption is not set
+  wafv2-logging-enabled:
+    service: WAFV2
+    level: Warning
+    issue: Logging is not enabled
