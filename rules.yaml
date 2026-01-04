@@ -179,3 +179,7 @@ rules:
     service: WAFV2
     level: Warning
     issue: Logging is not enabled
+  ecs-exec-logging:
+    service: ECS
+    level: Warning
+    issue: ECS Exec logging is not enabled

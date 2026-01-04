@@ -61,6 +61,7 @@ func checkECSConfigurations(client api.ECSClient, tbl *tablewriter.Table, rules 
 
 		for _, cluster := range descResp.Clusters {
 			checkContainerInsights(cluster, tbl, rules)
+			checkECSExecLogging(cluster, tbl, rules)
 			checkServices(client, *cluster.ClusterArn, *cluster.ClusterName, tbl, rules)
 		}
 	}
@@ -76,6 +77,23 @@ func checkContainerInsights(cluster types.Cluster, tbl *tablewriter.Table, rules
 	}
 
 	rule := rules.Get("ecs-container-insights")
+	if !enabled {
+		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.ClusterName, "Disabled", rule.Issue})
+	} else {
+		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *cluster.ClusterName, "Enabled", rule.Issue})
+	}
+}
+
+func checkECSExecLogging(cluster types.Cluster, tbl *tablewriter.Table, rules config.RulesConfig) {
+	enabled := false
+	if cluster.Configuration != nil && cluster.Configuration.ExecuteCommandConfiguration != nil {
+		conf := cluster.Configuration.ExecuteCommandConfiguration
+		if conf.Logging != types.ExecuteCommandLoggingNone {
+			enabled = true
+		}
+	}
+
+	rule := rules.Get("ecs-exec-logging")
 	if !enabled {
 		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *cluster.ClusterName, "Disabled", rule.Issue})
 	} else {
