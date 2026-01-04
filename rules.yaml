@@ -43,6 +43,10 @@ rules:
     service: ECS
     level: Warning
     issue: Propagate tags is not set
+  ecs-exec-logging:
+    service: ECS
+    level: Warning
+    issue: ECS Exec logging is not enabled
   ecr-tag-immutability:
     service: ECR
     level: Warning
@@ -179,7 +183,3 @@ rules:
     service: WAFV2
     level: Warning
     issue: Logging is not enabled
-  ecs-exec-logging:
-    service: ECS
-    level: Warning
-    issue: ECS Exec logging is not enabled
