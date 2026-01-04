@@ -77,7 +77,7 @@ rules:
     issue: Backup is not enabled
   rds-default-parameter-group:
     service: RDS
-    level: Warning
+    level: Alert
     issue: Default parameter group is used
   rds-public-access:
     service: RDS
