@@ -11,6 +11,10 @@ rules:
     service: ELB
     level: Warning
     issue: Deletion protection is not enabled
+  elb-target-health:
+    service: ELB
+    level: Alert
+    issue: All targets in the target group must be healthy
   cloudfront-logging-enabled:
     service: CloudFront
     level: Warning

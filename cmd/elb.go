@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"awsselfrev/internal/aws/api"
@@ -65,6 +66,7 @@ func checkELBConfigurations(client api.ELBv2Client, tbl *tablewriter.Table, rule
 		checkELBAccessLogs(lb, attrs, tbl, rules)
 		checkELBConnectionLogs(lb, attrs, tbl, rules)
 		checkELBDeletionProtection(lb, attrs, tbl, rules)
+		checkELBTargetGroupHealth(client, lb, tbl, rules)
 	}
 }
 
@@ -113,5 +115,48 @@ func checkELBDeletionProtection(lb types.LoadBalancer, attrs *elasticloadbalanci
 		table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), *lb.LoadBalancerName, "Disabled", rule.Issue})
 	} else {
 		table.AddRow(tbl, []string{rule.Service, "Pass", "-", *lb.LoadBalancerName, "Enabled", rule.Issue})
+	}
+}
+
+func checkELBTargetGroupHealth(client api.ELBv2Client, lb types.LoadBalancer, tbl *tablewriter.Table, rules config.RulesConfig) {
+	tgResp, err := client.DescribeTargetGroups(context.TODO(), &elasticloadbalancingv2.DescribeTargetGroupsInput{
+		LoadBalancerArn: lb.LoadBalancerArn,
+	})
+	if err != nil {
+		log.Printf("Warning: Failed to describe target groups for %s: %v", *lb.LoadBalancerName, err)
+		return
+	}
+
+	rule := rules.Get("elb-target-health")
+	for _, tg := range tgResp.TargetGroups {
+		healthResp, err := client.DescribeTargetHealth(context.TODO(), &elasticloadbalancingv2.DescribeTargetHealthInput{
+			TargetGroupArn: tg.TargetGroupArn,
+		})
+		if err != nil {
+			log.Printf("Warning: Failed to describe target health for %s: %v", *tg.TargetGroupName, err)
+			continue
+		}
+
+		allHealthy := true
+		healthStatus := "Healthy"
+		if len(healthResp.TargetHealthDescriptions) == 0 {
+			allHealthy = false
+			healthStatus = "No targets"
+		} else {
+			for _, desc := range healthResp.TargetHealthDescriptions {
+				if desc.TargetHealth.State != types.TargetHealthStateEnumHealthy {
+					allHealthy = false
+					healthStatus = string(desc.TargetHealth.State)
+					break
+				}
+			}
+		}
+
+		resourceName := fmt.Sprintf("%s > %s", *lb.LoadBalancerName, *tg.TargetGroupName)
+		if !allHealthy {
+			table.AddRow(tbl, []string{rule.Service, "Fail", color.ColorizeLevel(rule.Level), resourceName, healthStatus, rule.Issue})
+		} else {
+			table.AddRow(tbl, []string{rule.Service, "Pass", "-", resourceName, healthStatus, rule.Issue})
+		}
 	}
 }
